@@ -1,5 +1,6 @@
-use crate::objects::{scene::GameScene, gameobject::RenderType};
-use crate::rendering::{camera, mesh::Mesh, shaders::ShaderProgram};
+use crate::objects::scene::GameScene;
+use crate::objects::components::mesh::Mesh;
+use crate::rendering::shaders::ShaderProgram;
 use std::ffi::CString;
 
 pub struct GameContext {
@@ -41,10 +42,12 @@ impl Renderer {
         let mut all_scene_render_objects: Vec<RenderObject> = Vec::new();
 
         for object in scene.objects.iter() {
+            /*
             match object.to_render_objects() {
                 RenderType::None => {},
                 RenderType::Simple(render_object) => all_scene_render_objects.push(render_object),
             }
+            */
         }
 
         // we managed to get all the scene meshes, but how do we set the unfiforms ? TODO
@@ -58,7 +61,7 @@ impl Renderer {
                 Renderer::set_uniform_matrix4(render_object.world_tf, CString::new("modelWorldPos").unwrap(), render_object.mesh.get_shader_prog())
             }
 
-            scene.camera.set_camera_uniform(render_object.mesh.get_shader_prog());
+            //scene.camera.set_camera_uniform(render_object.mesh.get_shader_prog());
 
             render_object.mesh.draw();
         }

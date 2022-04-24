@@ -1,4 +1,3 @@
-use crate::rendering::shaders::ShaderProgram;
 extern crate cgmath;
 
 
@@ -25,7 +24,7 @@ impl Transform {
     pub fn at(x:f32, y:f32, z:f32) -> Transform {
         let mut result = Transform {
             position: cgmath::Vector3::new(x, y, z),
-            rotation: cgmath::Quaternion::one(),
+            rotation: cgmath::Quaternion::new(1.0, 0.0, 0.0, 0.0),
             world_pos: cgmath::Matrix4::<f32>::new(
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,

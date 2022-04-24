@@ -1,7 +1,6 @@
 extern crate cgmath;
 extern crate gl;
-use crate::objects::gameobject::{RenderType, GameObject};
-use crate::rendering::{shaders::ShaderProgram, mesh::Mesh};
+use crate::rendering::shaders::ShaderProgram;
 use crate::objects::transform::Transform;
 
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -33,7 +32,6 @@ impl Camera {
 
     pub fn set_camera_uniform(&self, shader_program: &ShaderProgram) {
         unsafe {
-            use std::ffi::CString;
             use cgmath::Matrix; // to use as_ptr() on the matrix
             // projection cam uniform
             let projection_mat_location = gl::GetUniformLocation(
@@ -63,21 +61,3 @@ impl Camera {
     }
 }
 
-impl GameObject for Camera {
-    fn update(&mut self, delta: f32) {
-
-    }
-
-    fn to_render_objects(&self) -> RenderType {
-        return RenderType::None;
-    }
-
-    fn render(&self, camera: &Camera) {
-
-    }
-
-    fn set_uniform(&self, shader_program: &ShaderProgram) {
-        self.set_camera_uniform(shader_program);
-    }
-
-}

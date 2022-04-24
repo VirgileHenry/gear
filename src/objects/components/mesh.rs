@@ -3,7 +3,6 @@ extern crate cgmath;
 use crate::rendering::colors::Color;
 use crate::rendering::colors::ColorPrimitives;
 use crate::rendering::material::Material;
-use crate::rendering::camera::Camera;
 use crate::rendering::shaders::ShaderProgram;
 
 
@@ -150,4 +149,5 @@ impl Mesh {
         }
     }
 }
+
 

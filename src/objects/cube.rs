@@ -1,5 +1,5 @@
-use crate::rendering::{camera, mesh::{Mesh, Vertex}, colors::{Color, ColorPrimitives}, shaders::ShaderProgram, renderer::RenderObject};
-use crate::objects::{transform::Transform, gameobject::{RenderType, GameObject}};
+use crate::rendering::colors::{Color, ColorPrimitives};
+use crate::objects::{transform::Transform, components::mesh::{Mesh, Vertex}};
 
 pub struct Cube {
     transform: Transform,
@@ -34,50 +34,5 @@ impl Cube {
         };
         
         return result;
-    }
-}
-
-impl GameObject for Cube {    
-    fn update(&mut self, delta:f32) {
-        self.transform.rotate(&cgmath::Quaternion::<f32>::from_sv(delta, cgmath::Vector3::<f32>::new(0.0, 1.0, 0.0)));
-    }
-
-    fn set_uniform(&self, shader_program: &ShaderProgram) {
-        unsafe {
-            // assume the shader program is used
-            // projection cam uniform
-            use cgmath::Matrix; // to use as_ptr() on the matrix
-
-            let world_pos_mat_loc = gl::GetUniformLocation(
-                self.mesh.get_shader_prog().id(),
-                "modelWorldPos\0".as_ptr() as *const gl::types::GLbyte
-            );
-            gl::UniformMatrix4fv(
-                world_pos_mat_loc, // the data itself
-                1 as gl::types::GLsizei, // the -number of element-
-                gl::FALSE,
-                self.transform.world_pos.as_ptr() as *const gl::types::GLfloat
-            );
-        }
-    }
-
-    fn to_render_objects(&self) -> RenderType {
-        // give the mesh the set_uniform method
-        return RenderType::Simple(RenderObject {
-            mesh: &self.mesh,
-            world_tf: &self.transform.world_pos,
-        });
-    }
-
-    fn render(&self, camera: &camera::Camera) {
-        self.mesh.use_shader_program();
-
-        // set uniforms
-        unsafe {
-            self.set_uniform(self.mesh.get_shader_prog());
-            camera.set_uniform(self.mesh.get_shader_prog());
-        }
-
-        self.mesh.draw();
     }
 }

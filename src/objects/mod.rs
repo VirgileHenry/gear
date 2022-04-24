@@ -1,4 +1,5 @@
 pub mod scene;
 pub mod cube;
 pub mod transform;
-pub mod gameobject;
+pub mod components;
+pub mod gearobject;
