@@ -1,41 +1,11 @@
-use crate::objects::scene::GameScene;
-use crate::objects::components::mesh::Mesh;
-use crate::rendering::shaders::ShaderProgram;
-use std::ffi::CString;
 
-pub struct GameContext {
-    // renderer
-    pub renderer: Renderer,
-    // scene
-    scene: GameScene,
-    // ui
-    // options ?
-}
-
-impl GameContext {
-    pub fn initialize() -> GameContext {
-        // create the game itself !
-        return GameContext {
-            renderer: Renderer { },
-            scene: GameScene::load_scene("testScene"),
-        }
-    }
-
-    pub fn update(&mut self, delta: f32) {
-        self.scene.update(delta);
-    }
-    
-    pub fn render_game(&mut self) {
-        self.renderer.render(&self.scene);
-    }
-}
 
 pub struct Renderer {
 
 }
-
+/*
 impl Renderer {
-    fn render(&self, scene: &GameScene) {
+    fn render(&self) {
         // render the world !
 
         // first, get a reference to all meshes
@@ -86,9 +56,4 @@ impl Renderer {
     }
 }
 
-pub struct RenderObject<'a> {
-    pub mesh: &'a Mesh,
-    pub world_tf: &'a cgmath::Matrix4::<f32>,
-}
-
-
+*/

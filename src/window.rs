@@ -10,7 +10,6 @@ pub struct GameWindow {
     window: sdl2::video::Window,
     event_pump: sdl2::EventPump,
     _gl_context: sdl2::video::GLContext,
-    pub game_context: rendering::renderer::GameContext,
 }
 
 pub fn create_window() -> GameWindow {
@@ -49,7 +48,6 @@ pub fn create_window() -> GameWindow {
         window: window_,
         event_pump: event_pump_,
         _gl_context: gl_context_,
-        game_context: rendering::renderer::GameContext::initialize(),
     }
 }
 
@@ -70,8 +68,6 @@ pub fn main_loop(window: &mut GameWindow) {
         let deltatime = (Instant::now() - last_instant).as_nanos() as f32 / 1_000_000_000.0; // delta time in seconds
         last_instant = Instant::now();
 
-        window.game_context.update(deltatime);
-
         // println!("fps: {}", 1.0 / deltatime);
 
         // render window contents here
@@ -79,9 +75,6 @@ pub fn main_loop(window: &mut GameWindow) {
             // clear the window
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
-
-        // call the renderer
-        window.game_context.render_game();
 
         // swap the rendered buffer with the one we just draw on
         window.window.gl_swap_window();

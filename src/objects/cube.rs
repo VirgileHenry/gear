@@ -1,14 +1,46 @@
-use crate::rendering::colors::{Color, ColorPrimitives};
-use crate::objects::{transform::Transform, components::mesh::{Mesh, Vertex}};
+use crate::objects::components::component::Component;
 
-pub struct Cube {
-    transform: Transform,
-    mesh: Mesh,
+struct SpiningComponent {
+    // component that spins its object
+    is_active: bool,
+    rotating_speed: f32,
 }
 
-impl Cube {
-    pub fn new() -> Cube {
-        let cube_mesh = Mesh::from_data(
+impl Component for SpiningComponent {
+    fn id() -> i32 {
+        return 2;
+    }
+
+    fn new() -> SpiningComponent {
+        return SpiningComponent {
+            is_active: true,
+            rotating_speed: 1.0,
+        }
+    }
+
+    fn set_active(&mut self, active: bool) {
+        self.is_active = active;
+    }
+
+    fn is_active(&self) -> bool {
+        return self.is_active;
+    }
+
+    fn update(&mut self, delta: f32) {
+        //object.transform.rotate();
+    }
+
+    fn on_created(&mut self) {
+        // pass
+    }
+
+    fn render(&self) {
+        // nothing to do !
+    }
+}
+
+/*
+let cube_mesh = Mesh::from_data(
             vec![
                 Vertex::new(cgmath::Vector3::new(-0.5, -0.5, -0.5), Color::from_primitive(ColorPrimitives::Red)),
                 Vertex::new(cgmath::Vector3::new(-0.5, -0.5, 0.5), Color::from_primitive(ColorPrimitives::White)),
@@ -27,12 +59,4 @@ impl Cube {
                 1, 3, 5,   1, 5, 7  // top
             ],
         ); 
-        
-        let result = Cube {
-            transform: Transform::origin(),
-            mesh: cube_mesh,
-        };
-        
-        return result;
-    }
-}
+*/

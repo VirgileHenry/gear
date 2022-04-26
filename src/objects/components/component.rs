@@ -1,5 +1,7 @@
 use std::any::Any;
 
+use crate::objects::gearobject::GearObject;
+
 // Helper traits:
 // allows to cast dyn components back to the implemented components
 pub trait ComponentToAny: 'static {
@@ -24,4 +26,18 @@ pub trait Component: ComponentToAny {
     fn is_active(&self) -> bool {
         return false; // default component is inactive 
     }
+
+    fn on_created(&mut self); // method called when the component get added to an object
+
+    fn update(&mut self, delta: f32);
+
+    fn render(&self);
 }
+
+// ====== Component id table =====
+/*
+Component : 0 (default)
+Mesh : 1
+Camera : 2
+
+*/

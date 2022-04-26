@@ -5,6 +5,8 @@ use crate::rendering::colors::ColorPrimitives;
 use crate::rendering::material::Material;
 use crate::rendering::shaders::ShaderProgram;
 
+use super::component::Component;
+
 
 pub struct Vertex {
     position: cgmath::Vector3<f32>,
@@ -47,6 +49,7 @@ pub struct Mesh {
     vertices: Vec<Vertex>,
     triangles: Vec<u32>,
     material: Material,
+    initialized: bool,
 }
 
 impl Mesh {
@@ -61,31 +64,23 @@ impl Mesh {
                 Vertex::new(cgmath::Vector3::new(0.0, 0.5, 0.0), Color::from_primitive(ColorPrimitives::Blue))],
             triangles: vec![0, 1, 2],
             material: Material::default(),
+            initialized: false,
         };
-
-        // initialize mesh data
-        result.set_up();
 
         return result;
     }
 
-    pub fn from_data(from_vertices: Vec<Vertex>, from_triangles: Vec<u32>) -> Mesh {
-        let mut result = Mesh {
-            vao: 0,
-            vbo: 0,
-            ebo: 0,
-            vertices: from_vertices,
-            triangles: from_triangles,
-            material: Material::default(),
-        };
-
-        // initialize mesh data
-        result.set_up();
-
-        return result;
+    pub fn load(&mut self, from_vertices: Vec<Vertex>, from_triangles: Vec<u32>) {
+        self.vao = 0;
+        self.vbo = 0;
+        self.ebo = 0;
+        self.vertices = from_vertices;
+        self.triangles = from_triangles;
+        self.material = Material::default();
+        self.initialized = false;
     }
 
-    fn set_up(&mut self) {
+    fn initialize(&mut self) {
         // create the buffers
         unsafe {
             // ask opengl to create the buffers
@@ -122,6 +117,8 @@ impl Mesh {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
         }
+
+        self.initialized = true;
     }
 
     pub fn get_shader_prog(&self) -> &ShaderProgram {
@@ -134,6 +131,9 @@ impl Mesh {
 
     pub fn draw(&self) {
         // assume the right shader program is in use and uniforms are set
+        if !self.initialized {
+            println!("GEAR ERROR -> Unable to draw mesh : mesh have not been initialized. consider using mesh.initialize()")
+        }
         
         unsafe {
             gl::BindVertexArray(self.vao);
@@ -150,4 +150,29 @@ impl Mesh {
     }
 }
 
+impl Component for Mesh {
+    fn id() -> i32 where Self: Sized {
+        return 1;
+    }
+
+    fn new() -> Self where Self: Sized {
+        return Mesh::new();
+    }
+
+    fn is_active(&self) -> bool {
+        return false; // a mesh does nothing
+    }
+
+    fn set_active(&mut self, _active: bool) { }
+
+    fn on_created(&mut self) {
+        // initialize mesh maybe ?
+    }
+
+    fn render(&self) {
+        self.draw();
+    }
+
+    fn update(&mut self, _delta: f32) { }
+}
 
