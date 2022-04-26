@@ -1,5 +1,5 @@
 use std::any::Any;
-
+use std::collections::HashMap;
 use crate::objects::gearobject::GearObject;
 
 // Helper traits:
@@ -17,7 +17,7 @@ impl<T: 'static> ComponentToAny for T {
 }
 
 pub trait Component: ComponentToAny {
-    fn id() -> i32 where Self: Sized;
+    fn id() -> u32 where Self: Sized;
 
     fn new() -> Self where Self: Sized;
 
@@ -33,7 +33,6 @@ pub trait Component: ComponentToAny {
 
     fn render(&self);
 }
-
 // ====== Component id table =====
 /*
 Component : 0 (default)
@@ -41,3 +40,87 @@ Mesh : 1
 Camera : 2
 
 */
+
+pub struct ComponentTable {
+    // hashtable of array of components: 
+    // used in scene to store all components !
+    table: HashMap<u32, HashMap<u32, Box<dyn Component>>>
+}
+
+impl ComponentTable {
+    pub fn new() -> ComponentTable {
+        return ComponentTable {
+            table: HashMap::new(),
+        }
+    }
+
+    pub fn get_component_on<C: Component>(&self, object: &GearObject) -> Option<&C> {
+        match self.table.get(&C::id()) {
+            Some(map) => {
+                match map.get(&object.id()) {
+                    Some(boxed_component) => {
+                        // cast the dyn Trait back to component using ComponentToAny
+                        let it = boxed_component.as_any();
+                        match it.downcast_ref::<C>() {
+                            Some(component) => Some(component),
+                            // if we find none here, we couldn't cast the component :
+                            // it was stored under a wrong id ! check unique ids !
+                            None => {
+                                println!("WARNING -> unable to cast component to desired type.
+                                    This may be due to components ids not being uniques !");
+                                None
+                            },
+                        }
+                    }
+                    // specified object does not contain the component
+                    None => None,
+                }
+            }
+            // no objects contains this component
+            None => None,
+        }
+    }
+
+    pub fn add_component_to<C : Component>(&mut self, object: &GearObject) -> Option<&C> {
+        // create and insert a component of the given type in the table
+        // then return it. returns None if unable to create / insert it
+
+        // if there is no vector of that component type, create one
+        if !self.table.contains_key(&C::id()) {
+            self.table.insert(C::id(), HashMap::new());
+        }
+
+        // get the vector where we insert the component
+        match self.table.get_mut(&C::id()) {
+            Some(map) => {
+                // found the array ! push a new component, and get a reference to it to return it
+                map.insert(object.id(), Box::new(C::new()));
+                match map.get(&object.id()) {
+                    Some(boxed_component) => match boxed_component.as_any().downcast_ref::<C>() {
+                        Some(result) => Some(result),
+                        // Unable to downcast component, returns none (interpreted as "can't create component")
+                        None => None,
+                    }
+                    // this should never happen
+                    None => None,
+                }
+            },
+            // Couldn't find the vector, so there have been an error while inserting it
+            None => None,
+        }
+    }
+
+    pub fn remove_component_on<C: Component>(&mut self, object: &GearObject) {
+        match self.table.get_mut(&C::id()) {
+            Some(map) => {
+                // just drop the value that we want to remove here
+                map.remove(&object.id());
+                return;
+            },
+            None => return,
+        }
+    }
+
+
+}
+

@@ -2,51 +2,57 @@ extern crate cgmath;
 use std::collections::HashMap;
 use crate::objects::{
     gearobject::GearObject,
-    components::component::Component,
+    components::component::{
+        ComponentTable,
+        Component,
+    },
 };
 
-pub struct GameScene<'a> {
+pub struct GameScene {
     // array of all objects
     // array of lights
-    pub objects: Vec<GearObject<'a>>,
-    components: HashMap<i32, Vec<Box<dyn Component>>>
+    objects: HashMap<u32, GearObject>,
+    components: ComponentTable,
+    last_object_id: u32,
 }
 
-impl<'a> GameScene<'a> {
+impl GameScene {
     pub fn load_scene(name: &str) -> GameScene {
         // load a scene from it's name
     
         match name {
             _ => GameScene {
-                objects: vec![],
-                components: HashMap::new(),
+                objects: HashMap::new(),
+                components: ComponentTable::new(),
+                last_object_id: 0,
             },
         }
     }
 
-    pub fn create_new_component<C : Component>(&mut self) -> Option<&C> {
-        // create and insert a component of the given type in the table
-        // then return it. returns None if unable to create / insert it
-
-        // if there is no vector of that component type, create one
-        if !self.components.contains_key(&C::id()) {
-            self.components.insert(C::id(), Vec::new());
+    pub fn empty() -> GameScene {
+        return GameScene {
+            objects: HashMap::new(),
+            components: ComponentTable::new(),
+            last_object_id: 0,
         }
+    }
 
-        // get the vector where we insert the component
-        match self.components.get_mut(&C::id()) {
-            Some(vec) => {
-                // found the array ! push a new component, and get a reference to it to return it
-                vec.push(Box::new(C::new()));
-                match vec[vec.len()-1].as_any().downcast_ref::<C>() {
-                    Some(result) => Some(result),
-                    // Unable to downcast component, returns none (interpreted as "can't create component")
-                    None => None,
-                }
-            },
-            // Couldn't find the vector, so there have been an error while inserting it
-            None => None,
+    pub fn instantiate_empty_object(&mut self) -> &GearObject {
+        // creates a new object to the scene and return a reference to it
+        self.last_object_id += 1;
+        self.objects.insert(self.last_object_id, GearObject::empty(self.last_object_id));
+        return match self.objects.get(&self.last_object_id) {
+            Some(object) => object,
+            None => panic!("Inserted object was not found !"),
         }
+    }
+
+    pub fn add_component_to<C: Component>(&mut self, object: &GearObject) {
+        self.components.add_component_to::<C>(object);
+    }
+
+    pub fn get_component_on<C: Component>(&self, object: &GearObject) -> Option<&C> {
+        return self.components.get_component_on::<C>(object);
     }
 
     pub fn render_scene(&self) {

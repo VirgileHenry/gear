@@ -53,7 +53,7 @@ impl Camera {
 }
 
 impl Component for Camera {
-    fn id() -> i32 where Self: Sized {
+    fn id() -> u32 where Self: Sized {
         return 2;
     }
 

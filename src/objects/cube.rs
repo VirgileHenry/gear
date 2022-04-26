@@ -7,7 +7,7 @@ struct SpiningComponent {
 }
 
 impl Component for SpiningComponent {
-    fn id() -> i32 {
+    fn id() -> u32 {
         return 2;
     }
 

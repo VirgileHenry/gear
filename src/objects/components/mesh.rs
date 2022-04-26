@@ -151,7 +151,7 @@ impl Mesh {
 }
 
 impl Component for Mesh {
-    fn id() -> i32 where Self: Sized {
+    fn id() -> u32 where Self: Sized {
         return 1;
     }
 
