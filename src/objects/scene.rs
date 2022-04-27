@@ -11,7 +11,7 @@ use crate::objects::{
 pub struct GameScene {
     // array of all objects
     // array of lights
-    objects: HashMap<u32, GearObject>,
+    objects: Vec<GearObject>,
     components: ComponentTable,
     last_object_id: u32,
 }
@@ -22,7 +22,7 @@ impl GameScene {
     
         match name {
             _ => GameScene {
-                objects: HashMap::new(),
+                objects: Vec::new(),
                 components: ComponentTable::new(),
                 last_object_id: 0,
             },
@@ -31,20 +31,16 @@ impl GameScene {
 
     pub fn empty() -> GameScene {
         return GameScene {
-            objects: HashMap::new(),
+            objects: Vec::new(),
             components: ComponentTable::new(),
             last_object_id: 0,
         }
     }
 
-    pub fn instantiate_empty_object(&mut self) -> &GearObject {
+    pub fn instantiate_empty_object(&mut self) {
         // creates a new object to the scene and return a reference to it
         self.last_object_id += 1;
-        self.objects.insert(self.last_object_id, GearObject::empty(self.last_object_id));
-        return match self.objects.get(&self.last_object_id) {
-            Some(object) => object,
-            None => panic!("Inserted object was not found !"),
-        }
+        self.objects.push(GearObject::empty(self.last_object_id, self));
     }
 
     pub fn add_component_to<C: Component>(&mut self, object: &GearObject) {
