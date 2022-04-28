@@ -1,11 +1,13 @@
 use std::any::Any;
 use std::collections::HashMap;
-use crate::objects::gearobject::GearObject;
+use super::super::super::objects::scene::GameScene;
 
 // Helper traits:
 // allows to cast dyn components back to the implemented components
 pub trait ComponentToAny: 'static {
     fn as_any(&self) -> &dyn Any;
+
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 // allows to cast dyn Trait back to desired components
@@ -14,12 +16,16 @@ impl<T: 'static> ComponentToAny for T {
     fn as_any(&self) -> &dyn Any {
         self
     }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 }
 
 pub trait Component: ComponentToAny {
     fn id() -> u32 where Self: Sized;
 
-    fn new() -> Self where Self: Sized;
+    fn new(object_id: u32) -> Self where Self: Sized;
 
     fn set_active(&mut self, active: bool);
 
@@ -29,15 +35,16 @@ pub trait Component: ComponentToAny {
 
     fn on_created(&mut self); // method called when the component get added to an object
 
-    fn update(&mut self, delta: f32);
+    fn update(&mut self, scene: &mut GameScene, delta: f32);
 
     fn render(&self);
 }
 // ====== Component id table =====
 /*
 Component : 0 (default)
-Mesh : 1
+Transform: 1
 Camera : 2
+Mesh : 3
 
 */
 
@@ -54,10 +61,10 @@ impl ComponentTable {
         }
     }
 
-    pub fn get_component_on<C: Component>(&self, object: &GearObject) -> Option<&C> {
+    pub fn get_component_on<C: Component>(&self, object_id: u32) -> Option<&C> {
         match self.table.get(&C::id()) {
             Some(map) => {
-                match map.get(&object.id()) {
+                match map.get(&object_id) {
                     Some(boxed_component) => {
                         // cast the dyn Trait back to component using ComponentToAny
                         let it = boxed_component.as_any();
@@ -81,7 +88,33 @@ impl ComponentTable {
         }
     }
 
-    pub fn add_component_to<C : Component>(&mut self, object: &GearObject) -> Option<&C> {
+    pub fn get_component_mut_on<C: Component>(&mut self, object_id: u32) -> Option<&mut C> {
+        match self.table.get_mut(&C::id()) {
+            Some(map) => {
+                match map.get_mut(&object_id) {
+                    Some(boxed_component) => {
+                        // cast the dyn Trait back to component using ComponentToAny
+                        match boxed_component.as_any_mut().downcast_mut::<C>() {
+                            Some(component) => Some(component),
+                            // if we find none here, we couldn't cast the component :
+                            // it was stored under a wrong id ! check unique ids !
+                            None => {
+                                println!("WARNING -> unable to cast component to desired type.
+                                    This may be due to components ids not being uniques !");
+                                None
+                            },
+                        }
+                    }
+                    // specified object does not contain the component
+                    None => None,
+                }
+            }
+            // no objects contains this component
+            None => None,
+        }
+    }
+
+    pub fn add_component_to<C : Component>(&mut self, object_id: u32) -> Option<&C> {
         // create and insert a component of the given type in the table
         // then return it. returns None if unable to create / insert it
 
@@ -94,8 +127,8 @@ impl ComponentTable {
         match self.table.get_mut(&C::id()) {
             Some(map) => {
                 // found the array ! push a new component, and get a reference to it to return it
-                map.insert(object.id(), Box::new(C::new()));
-                match map.get(&object.id()) {
+                map.insert(object_id, Box::new(C::new(object_id)));
+                match map.get(&object_id) {
                     Some(boxed_component) => match boxed_component.as_any().downcast_ref::<C>() {
                         Some(result) => Some(result),
                         // Unable to downcast component, returns none (interpreted as "can't create component")
@@ -110,11 +143,11 @@ impl ComponentTable {
         }
     }
 
-    pub fn remove_component_on<C: Component>(&mut self, object: &GearObject) {
+    pub fn remove_component_on<C: Component>(&mut self, object_id: u32) {
         match self.table.get_mut(&C::id()) {
             Some(map) => {
                 // just drop the value that we want to remove here
-                map.remove(&object.id());
+                map.remove(&object_id);
                 return;
             },
             None => return,

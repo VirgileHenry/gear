@@ -1,12 +1,30 @@
 extern crate cgmath;
-use std::collections::HashMap;
-use crate::objects::{
+extern crate sdl2;
+
+use sdl2::event::Event;
+use super::super::objects::{
     gearobject::GearObject,
     components::component::{
         ComponentTable,
-        Component,
     },
 };
+
+// allow scene loading, saving, etc
+pub struct SceneManager {
+    pub main_scene: Option<GameScene>,
+}
+
+impl SceneManager {
+    pub fn new() -> SceneManager {
+        return SceneManager {
+            main_scene: None,
+        }
+    }
+
+    pub fn load_scene() {
+        //main_scene = Option<GameScene>
+    }
+}
 
 pub struct GameScene {
     // array of all objects
@@ -17,19 +35,8 @@ pub struct GameScene {
 }
 
 impl GameScene {
-    pub fn load_scene(name: &str) -> GameScene {
-        // load a scene from it's name
-    
-        match name {
-            _ => GameScene {
-                objects: Vec::new(),
-                components: ComponentTable::new(),
-                last_object_id: 0,
-            },
-        }
-    }
-
     pub fn empty() -> GameScene {
+        // empty scene 
         return GameScene {
             objects: Vec::new(),
             components: ComponentTable::new(),
@@ -40,15 +47,15 @@ impl GameScene {
     pub fn instantiate_empty_object(&mut self) {
         // creates a new object to the scene and return a reference to it
         self.last_object_id += 1;
-        self.objects.push(GearObject::empty(self.last_object_id, self));
+        self.objects.push(GearObject::empty(self.last_object_id, &mut self.components));
     }
 
-    pub fn add_component_to<C: Component>(&mut self, object: &GearObject) {
-        self.components.add_component_to::<C>(object);
+    pub fn handle_events(&mut self, event: &Event) {
+
     }
 
-    pub fn get_component_on<C: Component>(&self, object: &GearObject) -> Option<&C> {
-        return self.components.get_component_on::<C>(object);
+    pub fn update_scene(&mut self) {
+
     }
 
     pub fn render_scene(&self) {

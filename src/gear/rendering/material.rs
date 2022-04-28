@@ -1,4 +1,4 @@
-use crate::rendering::shaders;
+use super::shaders;
 use std::ffi::CString;
 
 pub struct Material {

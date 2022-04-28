@@ -1,11 +1,17 @@
 extern crate gl;
 extern crate cgmath;
-use crate::rendering::colors::Color;
-use crate::rendering::colors::ColorPrimitives;
-use crate::rendering::material::Material;
-use crate::rendering::shaders::ShaderProgram;
-
-use super::component::Component;
+use super::super::super::rendering::{
+    colors::{
+        Color,
+        ColorPrimitives,
+    },
+    material::Material,
+    shaders::ShaderProgram,
+};
+use super::super::super::objects::{
+    components::component::Component,
+    scene::GameScene,
+};
 
 
 pub struct Vertex {
@@ -152,10 +158,10 @@ impl Mesh {
 
 impl Component for Mesh {
     fn id() -> u32 where Self: Sized {
-        return 1;
+        return 3;
     }
 
-    fn new() -> Self where Self: Sized {
+    fn new(object_id: u32) -> Self where Self: Sized {
         return Mesh::new();
     }
 
@@ -173,6 +179,6 @@ impl Component for Mesh {
         self.draw();
     }
 
-    fn update(&mut self, _delta: f32) { }
+    fn update(&mut self, _scene: &mut GameScene, _delta: f32) { }
 }
 

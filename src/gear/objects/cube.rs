@@ -1,4 +1,3 @@
-use crate::objects::components::component::Component;
 
 struct SpiningComponent {
     // component that spins its object
@@ -6,38 +5,6 @@ struct SpiningComponent {
     rotating_speed: f32,
 }
 
-impl Component for SpiningComponent {
-    fn id() -> u32 {
-        return 2;
-    }
-
-    fn new() -> SpiningComponent {
-        return SpiningComponent {
-            is_active: true,
-            rotating_speed: 1.0,
-        }
-    }
-
-    fn set_active(&mut self, active: bool) {
-        self.is_active = active;
-    }
-
-    fn is_active(&self) -> bool {
-        return self.is_active;
-    }
-
-    fn update(&mut self, delta: f32) {
-        //object.transform.rotate();
-    }
-
-    fn on_created(&mut self) {
-        // pass
-    }
-
-    fn render(&self) {
-        // nothing to do !
-    }
-}
 
 /*
 let cube_mesh = Mesh::from_data(

@@ -1,9 +1,9 @@
 extern crate cgmath;
 extern crate gl;
-use crate::rendering::shaders::ShaderProgram;
-use crate::objects:: {
+use super::super::super::rendering::shaders::ShaderProgram;
+use super::super::{
     components::component::Component,
-    //gearobject::GearObject,
+    scene::GameScene,
 };
 
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -57,7 +57,7 @@ impl Component for Camera {
         return 2;
     }
 
-    fn new() -> Camera where Self: Sized {
+    fn new(_object_id: u32) -> Camera where Self: Sized {
         return Camera::new_perspective_camera(70.0, 1.0, 0.1, 100.0)
     }
 
@@ -73,7 +73,7 @@ impl Component for Camera {
         return self.is_active;
     }
 
-    fn update(&mut self, delta: f32) {
+    fn update(&mut self, _scene: &mut GameScene, delta: f32) {
         // update for camera ?
     }
 
