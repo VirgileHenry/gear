@@ -1,3 +1,5 @@
+extern crate sdl2;
+use sdl2::event::Event;
 use std::any::Any;
 use std::collections::HashMap;
 use super::super::super::objects::scene::GameScene;
@@ -25,19 +27,35 @@ impl<T: 'static> ComponentToAny for T {
 pub trait Component: ComponentToAny {
     fn id() -> u32 where Self: Sized;
 
-    fn new(object_id: u32) -> Self where Self: Sized;
-
-    fn set_active(&mut self, active: bool);
-
-    fn is_active(&self) -> bool {
-        return false; // default component is inactive 
+    fn require_render() -> bool where Self: Sized {
+        return false;
     }
 
-    fn on_created(&mut self); // method called when the component get added to an object
+    fn require_update() -> bool where Self: Sized {
+        return false;
+    }
 
-    fn update(&mut self, scene: &mut GameScene, delta: f32);
+    fn require_inputs() -> bool where Self: Sized {
+        return false;
+    }
 
-    fn render(&self);
+    fn new(object_id: u32) -> Self where Self: Sized;
+
+    fn on_created(&mut self) {
+        // nothing to do by default
+    }
+
+    fn update(&mut self, _scene: &mut GameScene, _delta: f32) {
+        // nothing to do by default
+    }
+
+    fn render(&self) {
+        // nothing to do by default
+    }
+
+    fn handle_event(&mut self, _event: &Event) {
+        // nothing to do by default
+    }
 }
 // ====== Component id table =====
 /*
@@ -51,13 +69,19 @@ Mesh : 3
 pub struct ComponentTable {
     // hashtable of array of components: 
     // used in scene to store all components !
-    table: HashMap<u32, HashMap<u32, Box<dyn Component>>>
+    pub table: HashMap<u32, HashMap<u32, Box<dyn Component>>>,
+    pub require_render: Vec<u32>,
+    pub require_update: Vec<u32>,
+    pub require_inputs: Vec<u32>,
 }
 
 impl ComponentTable {
     pub fn new() -> ComponentTable {
         return ComponentTable {
             table: HashMap::new(),
+            require_render: Vec::new(),
+            require_update: Vec::new(),
+            require_inputs: Vec::new(),
         }
     }
 
@@ -114,13 +138,32 @@ impl ComponentTable {
         }
     }
 
-    pub fn add_component_to<C : Component>(&mut self, object_id: u32) -> Option<&C> {
+    pub fn add_component_to<C :Component>(&mut self, object_id: u32) -> Option<&C> {
         // create and insert a component of the given type in the table
         // then return it. returns None if unable to create / insert it
 
         // if there is no vector of that component type, create one
         if !self.table.contains_key(&C::id()) {
             self.table.insert(C::id(), HashMap::new());
+        }
+
+        // update components needs
+        if C::require_render() {
+            if !self.require_render.contains(&C::id()) {
+                self.require_render.push(C::id());
+            }
+        }
+
+        if C::require_update() {
+            if !self.require_update.contains(&C::id()) {
+                self.require_update.push(C::id());
+            }
+        }
+
+        if C::require_inputs() {
+            if !self.require_inputs.contains(&C::id()) {
+                self.require_inputs.push(C::id());
+            }
         }
 
         // get the vector where we insert the component
@@ -146,14 +189,12 @@ impl ComponentTable {
     pub fn remove_component_on<C: Component>(&mut self, object_id: u32) {
         match self.table.get_mut(&C::id()) {
             Some(map) => {
-                // just drop the value that we want to remove here
                 map.remove(&object_id);
-                return;
-            },
-            None => return,
+            }
+            // no objects contains this component
+            None => { },
         }
     }
-
 
 }
 

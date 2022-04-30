@@ -33,6 +33,7 @@ impl GearEngine {
         }
     }
 
+    /*
     pub fn call_world_update(&mut self) {
         match self.scene_manager.main_scene {
             Some(ref mut scene) => scene.update_scene(),
@@ -46,4 +47,5 @@ impl GearEngine {
             None => { },
         }
     }
+    */
 }

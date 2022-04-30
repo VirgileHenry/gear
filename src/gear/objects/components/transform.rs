@@ -4,7 +4,6 @@ use super::super::super::objects::{
         Component,
         ComponentTable,
     },
-    scene::GameScene,
 };
 
 pub struct Transform {
@@ -95,21 +94,5 @@ impl Component for Transform {
 
     fn on_created(&mut self) { 
         // nothing to do for transform
-    }
-
-    fn set_active(&mut self, _active: bool) {
-        // do nothing
-    }
-
-    fn is_active(&self) -> bool {
-        return true;
-    }
-
-    fn update(&mut self, _scene: &mut GameScene, _delta: f32) {
-        // pass for now
-    }
-
-    fn render(&self) {
-        // nothing to do to render this component
     }
 }

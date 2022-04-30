@@ -161,24 +161,16 @@ impl Component for Mesh {
         return 3;
     }
 
+    fn require_render() -> bool {
+        return true; // meshes do need to be rendered
+    }
+
     fn new(object_id: u32) -> Self where Self: Sized {
         return Mesh::new();
-    }
-
-    fn is_active(&self) -> bool {
-        return false; // a mesh does nothing
-    }
-
-    fn set_active(&mut self, _active: bool) { }
-
-    fn on_created(&mut self) {
-        // initialize mesh maybe ?
     }
 
     fn render(&self) {
         self.draw();
     }
-
-    fn update(&mut self, _scene: &mut GameScene, _delta: f32) { }
 }
 

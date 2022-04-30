@@ -15,7 +15,6 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 
 
 pub struct Camera {
-    is_active: bool,
     view_matrix: cgmath::Matrix4::<f32>,
     field_of_view_y: f32,
     znear: f32,
@@ -25,7 +24,6 @@ pub struct Camera {
 impl Camera {
     pub fn new_perspective_camera(fovy: f32, aspect: f32, znear: f32, zfar:f32) -> Camera {
         return Camera {
-            is_active: true,
             view_matrix: OPENGL_TO_WGPU_MATRIX * cgmath::perspective(cgmath::Deg(fovy), aspect, znear, zfar),
             field_of_view_y: fovy,
             znear: znear,
@@ -59,25 +57,5 @@ impl Component for Camera {
 
     fn new(_object_id: u32) -> Camera where Self: Sized {
         return Camera::new_perspective_camera(70.0, 1.0, 0.1, 100.0)
-    }
-
-    fn on_created(&mut self) {
-        // camera init
-    }
-
-    fn set_active(&mut self, active: bool) {
-        self.is_active = active;
-    }
-
-    fn is_active(&self) -> bool {
-        return self.is_active;
-    }
-
-    fn update(&mut self, _scene: &mut GameScene, delta: f32) {
-        // update for camera ?
-    }
-
-    fn render(&self) {
-        // render the camera is not rendering the scene !
     }
 }

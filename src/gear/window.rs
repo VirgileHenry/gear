@@ -56,17 +56,8 @@ pub fn create_window() -> GameWindow {
 
 impl GameWindow {
     pub fn main_loop(&mut self) {
-        //let mut last_instant = Instant::now();
         
         'main: loop {
-        
-            /*
-            // compute delta time
-            let deltatime = (Instant::now() - last_instant).as_nanos() as f32 / 1_000_000_000.0; // delta time in seconds
-            last_instant = Instant::now();
-            */
-
-            // println!("fps: {}", 1.0 / deltatime);
 
             unsafe {
                 // clear the window
@@ -86,10 +77,10 @@ impl GameWindow {
                                 engine.handle_events(&event);
 
                                 // call update
-                                engine.call_world_update();
+                                //engine.call_world_update();
                             
                                 // render engine to the window
-                                engine.render_scene();
+                                //engine.render_scene();
                             }
                             None => {},
                         }
