@@ -1,17 +1,13 @@
 extern crate foundry;
-use foundry::{ecs::{
-    world::World,
-    system::System, entity::Entity,
+use foundry::{
+    ecs::{
+        world::World,
+        system::System, entity::Entity,
     },  
-    create_entity,
 };
 use crate::gear_core::{
     gear_window::GameWindow,
     events::event_handling::EventHandling,
-    engine_state::{
-        EngineStateComponent,
-        EngineState,
-    },
 };
 use std::time::{Instant, Duration};
 
@@ -20,21 +16,23 @@ use super::events::event_handling::{DefaultEventHandler};
 
 pub struct Engine {
     world: World,
-    system_entity: Entity,
     main_timer: Duration,
+    engine_state: EngineState,
+}
+
+#[derive(PartialEq)]
+pub enum EngineState {
+    Stopped,
+    Running,
+    RequestingStop,
 }
 
 impl Engine {
     pub fn new() -> Engine {
-        let mut world = World::new();
-        let mut system_entity = create_entity!(world.components; EngineStateComponent{ 
-            current_state: EngineState::Stopped,
-            window_definition: None
-        });
         Engine {
-            world: world,
-            system_entity: system_entity,
+            world: World::new(),
             main_timer: Duration::ZERO,
+            engine_state: EngineState::Stopped,
         }
     }
 
@@ -55,17 +53,8 @@ impl Engine {
         // set initial values
         self.main_timer = Duration::ZERO;
 
-        // initializing the engine state to running
-        match self.world.get_component_mut::<EngineStateComponent>(&self.system_entity) {
-            Some(component) => component.current_state = EngineState::Running,
-            None => println!("[GEAR ENGINE] -> Unable to start the engine : no engine state component on the system entity."), 
-        }
-
         let mut last_instant = Instant::now();
-        while match self.world.get_component::<EngineStateComponent>(&self.system_entity) {
-            None => false, // missing the engine state on the system entity !
-            Some(component) => component.current_state == EngineState::Running,
-        } {
+        while self.engine_state == EngineState::Running {
             // record last instant, keep track of time
             let delta = last_instant.elapsed();
             self.main_timer += delta;
@@ -82,8 +71,5 @@ impl Engine {
         &mut self.world
     }
 
-    pub fn get_window_size(&self) -> Option<(i32, i32)> {
-        self.world.get_component::<EngineStateComponent>(&self.system_entity)?.window_definition
-    }
 
 }
