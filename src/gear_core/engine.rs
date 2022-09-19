@@ -6,25 +6,23 @@ use foundry::{
     },  
 };
 use crate::gear_core::{
-    gear_window::GameWindow,
-    events::event_handling::EventHandling,
+    gear_window::GlGameWindow,
+    events::event_handling::{
+        EventHandling,
+        DefaultEventHandler,
+    },
+    rendering::renderer::{
+        DefaultOpenGlRenderer,
+        Renderer
+    },
 };
 use std::time::{Instant, Duration};
-
-use super::events::event_handling::{DefaultEventHandler};
 
 
 pub struct Engine {
     world: World,
     main_timer: Duration,
     engine_state: EngineState,
-}
-
-#[derive(PartialEq)]
-pub enum EngineState {
-    Stopped,
-    Running,
-    RequestingStop,
 }
 
 impl Engine {
@@ -36,13 +34,9 @@ impl Engine {
         }
     }
 
-    pub fn with_window(mut self, event_handler: Option<Box<dyn EventHandling>>) -> Engine {
+    pub fn with_window(mut self, event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Engine {
         // create the window system and add it
-        let mut event_handling_system = match event_handler {
-            Some(handler) => handler,
-            None => Box::new(DefaultEventHandler::new()),
-        };
-        let game_window = GameWindow::new(event_handling_system);
+        let game_window = GlGameWindow::new(event_handler, renderer);
         let window_system = System::new(Box::new(game_window), foundry::ecs::system::UpdateFrequency::PerFrame);
         self.world.register_system(window_system, 0);
         
@@ -52,6 +46,7 @@ impl Engine {
     pub fn main_loop(mut self) -> Engine {
         // set initial values
         self.main_timer = Duration::ZERO;
+        self.engine_state = EngineState::Running;
 
         let mut last_instant = Instant::now();
         while self.engine_state == EngineState::Running {
@@ -61,10 +56,27 @@ impl Engine {
             last_instant = Instant::now();
 
             // update the engine
-            self.world.update(delta.as_secs_f32());
+            let mut callback = EngineMessage::None;
+            self.world.update(delta.as_secs_f32(), &mut callback);
+
+            match callback {
+                EngineMessage::None => {},
+                _ => self.handle_message(callback),
+            }
         }
 
+        // end of main loop, state back to stopped
+        self.engine_state = EngineState::Stopped;
+
         self
+    }
+
+    pub fn handle_message(&mut self, message: EngineMessage) {
+        match message {
+            EngineMessage::StopEngine => self.engine_state = EngineState::RequestingStop,
+
+            _ => {}
+        }
     }
 
     pub fn get_world(&mut self) -> &mut World {
@@ -72,4 +84,18 @@ impl Engine {
     }
 
 
+}
+
+
+#[derive(PartialEq)]
+pub enum EngineState {
+    Stopped,
+    Running,
+    RequestingStop,
+}
+
+
+pub enum EngineMessage {
+    None,
+    StopEngine,
 }

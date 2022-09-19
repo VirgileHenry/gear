@@ -1,3 +1,5 @@
+use foundry::iterate_over_component_mut;
+
 extern crate cgmath;
 extern crate gl;
 
@@ -35,8 +37,16 @@ impl CameraComponent {
     }
 
     /// Set this camera as the one rendering the scene to the window
-    pub fn set_as_main(&mut self) {
+    pub fn set_as_main(&mut self, components: &mut foundry::ecs::component_table::ComponentTable) {
+        // set all cameras to not main
+        for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
+            cam_comp.is_main = false;
+        }
         self.is_main = true;
+    }
+
+    pub fn is_main(&self) -> bool {
+        self.is_main
     }
 
 

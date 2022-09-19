@@ -1,3 +1,3 @@
 pub struct Material {
-    
+    // shader ?
 }
