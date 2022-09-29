@@ -32,11 +32,13 @@ impl CameraComponent {
 
     /// Change the aspect ratio of the camera.
     /// This recomputes a projection matrix from the internal stored values.
+    #[allow(dead_code)]
     pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) {
-        self.view_matrix = OPENGL_TO_WGPU_MATRIX * cgmath::perspective(cgmath::Deg(self.field_of_view_y), aspect_ratio, self.znear, self.zfar);
+        self.view_matrix = /* OPENGL_TO_WGPU_MATRIX * */ cgmath::perspective(cgmath::Deg(self.field_of_view_y), aspect_ratio, self.znear, self.zfar);
     }
 
     /// Set this camera as the one rendering the scene to the window
+    #[allow(dead_code)]
     pub fn set_as_main(&mut self, components: &mut foundry::ecs::component_table::ComponentTable) {
         // set all cameras to not main
         for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
@@ -45,8 +47,14 @@ impl CameraComponent {
         self.is_main = true;
     }
 
+    #[allow(dead_code)]
     pub fn is_main(&self) -> bool {
         self.is_main
+    }
+
+    #[allow(dead_code)]
+    pub fn view_matrix(&self) -> cgmath::Matrix4<f32> {
+        self.view_matrix
     }
 
 

@@ -6,7 +6,7 @@ use foundry::{
     },  
 };
 use crate::gear_core::{
-    gear_window::GlGameWindow,
+    rendering::opengl::gl_window::GlGameWindow,
     events::event_handling::{
         EventHandling,
         DefaultEventHandler,
@@ -16,7 +16,7 @@ use crate::gear_core::{
         Renderer
     },
 };
-use std::time::{Instant, Duration};
+use std::{time::{Instant, Duration}, any::Any};
 
 
 pub struct Engine {
@@ -34,13 +34,27 @@ impl Engine {
         }
     }
 
-    pub fn with_window(mut self, event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Engine {
+    pub fn with_gl_window(mut self, event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Engine {
         // create the window system and add it
         let game_window = GlGameWindow::new(event_handler, renderer);
         let window_system = System::new(Box::new(game_window), foundry::ecs::system::UpdateFrequency::PerFrame);
         self.world.register_system(window_system, 0);
         
         self
+    }
+
+    pub fn get_gl_window(&self) -> Option<&GlGameWindow> {
+        match self.world.get_system(0) {
+            Some(system) => (system.get_updatable() as &dyn Any).downcast_ref::<GlGameWindow>(),
+            None => None,
+        }
+    }
+
+    pub fn get_gl_window_mut(&mut self) -> Option<&mut GlGameWindow> {
+        match self.world.get_system_mut(0) {
+            Some(system) => system.get_updatable_mut().as_any_mut().downcast_mut::<GlGameWindow>(),
+            None => None,
+        }
     }
 
     pub fn main_loop(mut self) -> Engine {

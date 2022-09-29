@@ -3,13 +3,12 @@ extern crate sdl2;
 extern crate gl;
 extern crate foundry;
 use std::any::Any;
-use super::{
+use crate::gear_core::{
     events::event_handling::{
         EventHandling, 
         DefaultEventHandler
     }, engine::{
         EngineMessage,
-        Engine
     },
     rendering::renderer::{
         Renderer,
@@ -18,11 +17,11 @@ use super::{
 };
 
 pub struct GlGameWindow {
-    sdl: sdl2::Sdl,
-    video_subsystem: sdl2::VideoSubsystem,
+    _sdl: sdl2::Sdl,
+    _video_subsystem: sdl2::VideoSubsystem,
     window: sdl2::video::Window,
     event_pump: sdl2::EventPump,
-    gl_context: sdl2::video::GLContext,
+    _gl_context: sdl2::video::GLContext,
     event_handler: Box<dyn EventHandling>,
     gl_renderer: Box<dyn Renderer>,
 }
@@ -34,7 +33,7 @@ impl GlGameWindow {
         let video_subsystem = sdl.video().unwrap();
     
         let window = video_subsystem
-            .window("Gear Engine v0.1.0", 900, 700) // name and default size
+            .window("Gear Engine v0.1.0", 900, 600) // name and default size
             .opengl() // opengl flag so we can use opengl
             .resizable() // able to resize the window
             .build() // build the WindowBuilder into a window
@@ -43,27 +42,41 @@ impl GlGameWindow {
         let event_pump = sdl.event_pump().unwrap();
 
         let gl_context = window.gl_create_context().unwrap();
-        let gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+        let _gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
-        let mut event_handling_system = match event_handler {
+        let event_handling_system = match event_handler {
             Some(handler) => handler,
             None => Box::new(DefaultEventHandler::new()),
         };
 
-        let mut renderer_system = match renderer {
+        let renderer_system = match renderer {
             Some(renderer) => renderer,
             None => Box::new(DefaultOpenGlRenderer::new()),
         };
     
         return GlGameWindow {
-            sdl: sdl,
-            video_subsystem: video_subsystem,
+            _sdl: sdl,
+            _video_subsystem: video_subsystem,
             window: window,
             event_pump: event_pump,
-            gl_context: gl_context,
+            _gl_context: gl_context,
             event_handler: event_handling_system,
             gl_renderer: renderer_system,
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn get_renderer(&self) -> &Box<dyn Renderer> {
+        &self.gl_renderer
+    }
+
+    pub fn set_new_renderer(&mut self, renderer: Box<dyn Renderer>) {
+        self.gl_renderer = renderer;
+    }
+
+    pub fn aspect_ratio(&self) -> f32 {
+        let (w, h) = self.window.size();
+        w as f32 / h as f32
     }
 
 }
@@ -91,11 +104,19 @@ impl foundry::ecs::system::Updatable for GlGameWindow {
             },
         };
 
-
         // render the ecs in our context
         self.gl_renderer.render(components);
 
         // swap the rendered buffer with the one we just draw on
         self.window.gl_swap_window();
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    } 
+
 }
