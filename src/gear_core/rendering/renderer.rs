@@ -1,4 +1,5 @@
 use std::{collections::HashMap};
+use cgmath::SquareMatrix;
 use foundry::iterate_over_component;
 use crate::gear_core::{
     rendering::{
@@ -68,7 +69,7 @@ impl Renderer for DefaultOpenGlRenderer {
                     // set model uniform
                     current_program.set_mat4("modelWorldPos", transform.world_pos());
                     // bind the vertex array
-                    unsafe { gl::BindVertexArray(mesh_renderer.vao()); }
+                    mesh_renderer.vao().bind();
                     // (bind textures)
                     // (change states)
                     // draw elements (glDrawArrays or glDrawElements)

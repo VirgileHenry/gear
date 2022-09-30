@@ -30,10 +30,8 @@ fn main() {
             window.set_new_renderer(Box::new(renderer));
             aspect_ratio = window.aspect_ratio();
         },
-        None => println!("ah."),
+        None => {},
     }
-
-    println!("[GEAR ENGINE] -> [WINDOW] -> aspect ratio : {}", aspect_ratio);
 
     // create cube and camera entity
     let world = engine.get_world();
@@ -62,7 +60,7 @@ struct RotatingSystem {
 impl Updatable for RotatingSystem {
     fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         self.timer += delta;
-        for (transform, mesh) in iterate_over_component_mut!(components; Transform, MeshRenderer) {
+        for (transform) in iterate_over_component_mut!(components; Transform) {
             transform.rotate(cgmath::Vector3::new(0.0, 1.0, 0.0), 1.0 * delta);
         }
     }
@@ -75,3 +73,7 @@ impl Updatable for RotatingSystem {
         self
     }
 }
+
+
+
+

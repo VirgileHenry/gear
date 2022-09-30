@@ -1,9 +1,10 @@
 extern crate cgmath;
 extern crate gl;
-use crate::gear_core::rendering::geometry::primitives::Vertex;
-use crate::gear_core::rendering::material::Material;
-
-use super::material;
+use crate::gear_core::rendering::{
+    geometry::primitives::Vertex, 
+    material::Material,
+    opengl,
+};
 
 pub struct Mesh {
     vertices: Vec<Vertex>,
@@ -75,102 +76,46 @@ pub struct MeshRenderer {
     pub mesh: MeshType,
     pub material: Material,
     // opengl stuff
-    vbo: gl::types::GLuint, // holds vertex data
-    vao: gl::types::GLuint, // holds rendering parameter data
-    ebo: gl::types::GLuint, // holds index data
+    vao: opengl::buffers::VertexArray, // holds rendering parameter data
+    _vbo: opengl::buffers::BufferObject, // holds vertex data
+    _ebo: opengl::buffers::BufferObject, // holds index data
 }
 
 impl MeshRenderer {
     pub fn new(mesh: MeshType, material: Material) -> MeshRenderer {
         match mesh {
             MeshType::Owned(mesh) => {
-                let mut vbo = 0;
-                let mut vao = 0;
-                let mut ebo = 0;
-                unsafe {
-                    // vbo
-                    // create the buffer and bind it
-                    gl::GenBuffers(1, &mut vbo);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-                    // put the vertex data in the buffer
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,                                                       // target
-                        (mesh.vertices.len() * std::mem::size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
-                        mesh.vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                        gl::STATIC_DRAW,                               // usage
-                    );
-                    // unbind the buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-                    // ebo
-                    // create the buffer and bind it
-                    gl::GenBuffers(1, &mut ebo);
-                    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-                    // put the vertex data in the buffer
-                    gl::BufferData(
-                        gl::ELEMENT_ARRAY_BUFFER,                                                       // target
-                        (mesh.triangles.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr, // size of data in bytes
-                        mesh.triangles.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                        gl::STATIC_DRAW,                               // usage
-                    );
-                    // unbind the buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-                    // vao
-                    // create the buffer and bind it
-                    gl::GenVertexArrays(1, &mut vao);
-                    gl::BindVertexArray(vao);
-                    // tell the vao where is the vbo
-                    gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-                    // tell the vao where is the ebo
-                    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-                    // shader layouts 
-                    gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
-                    gl::VertexAttribPointer(
-                        0,         // index of the generic vertex attribute ("layout (location = 0)")
-                        3,         // the number of components per generic vertex attribute
-                        gl::FLOAT, // data type
-                        gl::FALSE, // normalized (int-to-float conversion)
-                        (std::mem::size_of::<Vertex>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
-                        std::ptr::null(),                                     // offset of the first component
-                    );
-                    gl::EnableVertexAttribArray(1); // this is "layout (location = 1)" in vertex shader
-                    gl::VertexAttribPointer(
-                        1,         // index of the generic vertex attribute ("layout (location = 0)")
-                        3,         // the number of components per generic vertex attribute
-                        gl::FLOAT, // data type
-                        gl::FALSE, // normalized (int-to-float conversion)
-                        (std::mem::size_of::<Vertex>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
-                        (std::mem::size_of::<cgmath::Vector3<f32>>()) as *const std::ffi::c_void, // offset of the first component
-                    );
-                    gl::EnableVertexAttribArray(2); // this is "layout (location = 2)" in vertex shader
-                    gl::VertexAttribPointer(
-                        2,         // index of the generic vertex attribute ("layout (location = 0)")
-                        2,         // the number of components per generic vertex attribute
-                        gl::FLOAT, // data type
-                        gl::FALSE, // normalized (int-to-float conversion)
-                        (std::mem::size_of::<Vertex>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
-                        (2 * std::mem::size_of::<cgmath::Vector3<f32>>()) as *const std::ffi::c_void, // offset of the first component
-                    );
-                    // unbind
-                    gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-                    gl::BindVertexArray(0);
-                }
+                // create and bind the vao
+                let vao = opengl::buffers::VertexArray::new();
+                vao.bind();
+                // create the vbo, bind it, upload data to it and give the vertex the attrib pointers
+                let vbo = opengl::buffers::BufferObject::new(gl::ARRAY_BUFFER);
+                vbo.bind();
+                vbo.upload_data(&mesh.vertices, gl::STATIC_DRAW);
+                Vertex::vertex_attrib_pointer();
+                // create the ebo, bind it, upload data to it
+                let ebo = opengl::buffers::BufferObject::new(gl::ELEMENT_ARRAY_BUFFER);
+                ebo.bind();
+                ebo.upload_data(&mesh.triangles, gl::STATIC_DRAW);
+                // unbind the vao first, otherwise we will unbind the vbo and ebo from the vao
+                vao.unbind();
+                // ubind vbo and ebo
+                ebo.unbind();
+                vbo.unbind();
+                
                 MeshRenderer { 
                     mesh: MeshType::Owned(mesh),
                     material: material,
-                    vbo: vbo,
                     vao: vao,
-                    ebo: ebo,
+                    _vbo: vbo,
+                    _ebo: ebo,
                 }
             }
         }
     }
 
-    pub fn vao(&self) -> gl::types::GLuint {
-        self.vao
-    }
-
-    pub fn vbo(&self) -> gl::types::GLuint {
-        self.vbo
+    pub fn vao(&self) -> &opengl::buffers::VertexArray {
+        &self.vao
     }
 
     pub fn triangles_len(&self) -> usize {
