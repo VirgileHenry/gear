@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use cgmath::Quaternion;
 use foundry::ecs::{component_table::ComponentTable, entity::Entity};
 
 extern crate cgmath;
@@ -31,23 +32,14 @@ impl Transform {
         }
     }
 
-    pub fn translated(tx: f32, ty: f32, tz: f32) -> Transform {
-        Transform { 
-            world_pos: cgmath::Matrix4::new(
-                1.0, 0.0, 0.0, 0.0, 
-                0.0, 1.0, 0.0, 0.0, 
-                0.0, 0.0, 1.0, 0.0, 
-                tx, ty, tz, 1.0
-            ),
-            local_pos: cgmath::Matrix4::new(
-                1.0, 0.0, 0.0, 0.0, 
-                0.0, 1.0, 0.0, 0.0, 
-                0.0, 0.0, 1.0, 0.0, 
-                tx, ty, tz, 1.0
-            ),
-            children: Vec::new(),
-            parent: None,
-        }
+    pub fn translated(mut self, tx: f32, ty: f32, tz: f32) -> Transform {
+        self.translate(tx, ty, tz);
+        self
+    }
+
+    pub fn euler(mut self, rx: f32, ry: f32, rz: f32) -> Transform {
+        self.rotate_euler(rx, ry, rz);
+        self
     }
 
     #[allow(dead_code)]
@@ -60,6 +52,15 @@ impl Transform {
     pub fn rotate(&mut self, axis: cgmath::Vector3<f32>, angle: f32) {
         self.local_pos = self.local_pos * cgmath::Matrix4::from_axis_angle(axis, cgmath::Rad(angle));
         self.recompute_world_pos(None);
+    }
+
+    pub fn rotate_euler(&mut self, rx: f32, ry: f32, rz: f32) {
+        self.local_pos = self.local_pos * cgmath::Matrix4::from(cgmath::Quaternion::from(cgmath::Euler::new(cgmath::Rad(rx), cgmath::Rad(ry), cgmath::Rad(rz))));
+        self.recompute_world_pos(None);
+    }
+
+    pub fn position(&self) -> cgmath::Vector3<f32> {
+        cgmath::Vector3 { x: self.world_pos.w.x, y: self.world_pos.w.y, z: self.world_pos.w.z }
     }
 
     #[allow(dead_code)]
