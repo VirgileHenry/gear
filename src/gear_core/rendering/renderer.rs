@@ -5,6 +5,7 @@ use crate::gear_core::{
     rendering::{
         mesh::MeshRenderer,
         camera::CameraComponent,
+        lighting::light::MainLight,
     },
     geometry::transform::Transform,
 };
@@ -61,13 +62,22 @@ impl Renderer for DefaultOpenGlRenderer {
                 };
                 current_program.set_used();
                 // set camera uniform
-                current_program.set_mat4("cameraWorldPos", cam_transform.world_pos());
+                current_program.set_mat4("cameraWorldPos", cam_transform.world_pos().invert().unwrap());
                 current_program.set_mat4("projectionMat", camera.view_matrix());
+                // set main light scene
+                for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
+                    current_program.set_vec3("mainLightPos", light_tf.position());
+                    current_program.set_vec3("mainLightColor", light.color_as_vec());
+                    current_program.set_vec3("ambientColor", light.ambient_as_vec());
+                    break; // only first main light taken into account, the others would override the first one so let's avoid useless code
+                }
 
                 for (transform, mesh_renderer) in vec.into_iter() {
                     // todo !
                     // set model uniform
                     current_program.set_mat4("modelWorldPos", transform.world_pos());
+                    // set material properties
+                    mesh_renderer.material().set_properties_to_shader(current_program);
                     // bind the vertex array
                     mesh_renderer.vao().bind();
                     // (bind textures)

@@ -53,6 +53,15 @@ impl GlGameWindow {
             Some(renderer) => renderer,
             None => Box::new(DefaultOpenGlRenderer::new()),
         };
+
+        // some open gl flags
+        unsafe {
+            // face are one sided
+            gl::Enable(gl::CULL_FACE);
+            gl::CullFace(gl::FRONT);
+            // enable depth tets
+            gl::Enable(gl::DEPTH_TEST);
+        }
     
         return GlGameWindow {
             _sdl: sdl,
@@ -85,7 +94,7 @@ impl foundry::ecs::system::Updatable for GlGameWindow {
     fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, _delta: f32, user_data: &mut dyn Any) {
         unsafe {
             // clear the window
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         // poll events

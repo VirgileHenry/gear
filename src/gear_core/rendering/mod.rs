@@ -6,3 +6,4 @@ pub mod renderer;
 pub mod material;
 pub mod geometry;
 pub mod opengl;
+pub mod lighting;

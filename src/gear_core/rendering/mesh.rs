@@ -26,40 +26,40 @@ impl Mesh {
                 Vertex::new(side_size, side_size, -side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
                 Vertex::new(side_size, -side_size, -side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
                 // right
-                Vertex::new(side_size, -side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(side_size, -side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(side_size, side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(side_size, side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
+                Vertex::new(side_size, -side_size, -side_size, 1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(side_size, -side_size, side_size, 1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(side_size, side_size, side_size, 1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(side_size, side_size, -side_size, 1.0, 0.0, 0.0, 0.0, 0.0),
                 // bottom
                 Vertex::new(-side_size, -side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
                 Vertex::new(-side_size, -side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
                 Vertex::new(side_size, -side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
                 Vertex::new(side_size, -side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
                 // back
-                Vertex::new(-side_size, -side_size, side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
-                Vertex::new(-side_size, side_size, side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
-                Vertex::new(side_size, side_size, side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
-                Vertex::new(side_size, -side_size, side_size, 0.0, 0.0, -1.0, 0.0, 0.0),
+                Vertex::new(-side_size, -side_size, side_size, 0.0, 0.0, 1.0, 0.0, 0.0),
+                Vertex::new(-side_size, side_size, side_size, 0.0, 0.0, 1.0, 0.0, 0.0),
+                Vertex::new(side_size, side_size, side_size, 0.0, 0.0, 1.0, 0.0, 0.0),
+                Vertex::new(side_size, -side_size, side_size, 0.0, 0.0, 1.0, 0.0, 0.0),
                 // left
-                Vertex::new(-side_size, -side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(-side_size, -side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(-side_size, side_size, side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
-                Vertex::new(-side_size, side_size, -side_size, 0.0, 1.0, 0.0, 0.0, 0.0),
+                Vertex::new(-side_size, -side_size, -side_size, -1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(-side_size, -side_size, side_size, -1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(-side_size, side_size, side_size, -1.0, 0.0, 0.0, 0.0, 0.0),
+                Vertex::new(-side_size, side_size, -side_size, -1.0, 0.0, 0.0, 0.0, 0.0),
 
             ],
             triangles: vec![
-                0, 1, 2,    // top
-	            0, 2, 3, 
-	            4, 5, 6,    // front
-	            4, 6, 7, 
+                0, 2, 1,    // top
+	            0, 3, 2, 
+	            4, 6, 5,    // front
+	            4, 7, 6, 
                 8, 9, 10,   // right
                 8, 10, 11, 
                 12, 13, 14, // bottom
                 12, 14, 15,
                 16, 17, 18, // back
                 16, 18, 19,
-                20, 21, 22, //left
-                20, 22, 23,
+                20, 22, 21, //left
+                20, 23, 22,
             ],
         }
     }
@@ -122,5 +122,9 @@ impl MeshRenderer {
         match &self.mesh {
             MeshType::Owned(mesh) => mesh.triangles.len(),
         }
-    } 
+    }
+
+    pub fn material(&self) -> &Material {
+        &self.material
+    }
 }

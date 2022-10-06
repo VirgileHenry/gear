@@ -10,6 +10,7 @@ uniform mat4 modelWorldPos;
 
 out VS_OUTPUT {
     vec3 Normal;
+    vec3 Position;
 } OUT;
   
 void main()
