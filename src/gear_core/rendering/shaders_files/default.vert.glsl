@@ -9,12 +9,15 @@ uniform mat4 cameraWorldPos;
 uniform mat4 modelWorldPos;
 
 out VS_OUTPUT {
-    vec3 Normal;
     vec3 Position;
+    vec3 Normal;
+    vec2 UV;
 } OUT;
   
 void main()
 {
-    gl_Position = vec4(inPos, 1.0); // projectionMat * cameraWorldPos * modelWorldPos * 
-    OUT.Normal = inNormal;
+    gl_Position = projectionMat * cameraWorldPos * modelWorldPos * vec4(inPos, 1.0);
+    OUT.Position = vec3(modelWorldPos * vec4(inPos, 1.0));
+    OUT.Normal = mat3(transpose(inverse(modelWorldPos))) * inNormal;
+    OUT.UV = inUv;
 }
