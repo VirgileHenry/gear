@@ -19,7 +19,7 @@ fn main() {
     
     // create a mesh renderer from the shader program
     let mesh = MeshType::Owned(Mesh::cube(1.0));
-    let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.2, 0.4, 0.5)}));
+    let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let mesh_renderer = MeshRenderer::new(mesh, material);
 
     // register the shader program in the renderer
@@ -40,11 +40,13 @@ fn main() {
     let rotater = RotatingSystem{timer:0.0};
     let system = foundry::ecs::system::System::new(Box::new(rotater), foundry::ecs::system::UpdateFrequency::PerFrame);
 
-    let cube = create_entity!(world.components; Transform::origin(), mesh_renderer);
+    let _cube = create_entity!(world.components; Transform::origin(), mesh_renderer);
     let mut camera_component = CameraComponent::new_perspective_camera(80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
-    let camera = create_entity!(world.components; Transform::origin().translated(0.0, 1.5, -5.0).euler(0.0, 3.1415, 0.0), camera_component);
-    let sun = create_entity!(world.components; Transform::origin().translated(-4.0, 4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let _camera = create_entity!(world.components; Transform::origin().translated(0.0, 1.5, -5.0).euler(0.0, 3.1415, 0.0), camera_component);
+    let sun = create_entity!(world.components; Transform::origin().translated(-4.0, -4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    // todo doesn't work 
+    world.set_entity_active(&sun, false);
 
     world.register_system(system, 10);
     // start main loop

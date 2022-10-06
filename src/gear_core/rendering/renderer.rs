@@ -64,6 +64,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 // set camera uniform
                 current_program.set_mat4("cameraWorldPos", cam_transform.world_pos().invert().unwrap());
                 current_program.set_mat4("projectionMat", camera.view_matrix());
+                current_program.set_vec3("camPos", cam_transform.position());
                 // set main light scene
                 for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
                     current_program.set_vec3("mainLightPos", light_tf.position());
