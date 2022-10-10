@@ -34,7 +34,7 @@ impl CameraComponent {
     /// This recomputes a projection matrix from the internal stored values.
     #[allow(dead_code)]
     pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) {
-        self.view_matrix = /* OPENGL_TO_WGPU_MATRIX * */ cgmath::perspective(cgmath::Deg(self.field_of_view_y), aspect_ratio, self.znear, self.zfar);
+        self.view_matrix = OPENGL_TO_WGPU_MATRIX * cgmath::perspective(cgmath::Deg(self.field_of_view_y), aspect_ratio, self.znear, self.zfar);
     }
 
     /// Set this camera as the one rendering the scene to the window

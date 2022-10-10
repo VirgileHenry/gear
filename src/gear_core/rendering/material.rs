@@ -1,5 +1,8 @@
+use gl::DeleteTextures;
+
 use super::shaders::{ShaderProgramRef, ShaderProgram};
 use crate::gear_core::rendering::opengl::color::Color;
+
 
 pub struct Material {
     /// shader program to use

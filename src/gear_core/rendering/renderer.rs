@@ -3,14 +3,13 @@ use cgmath::SquareMatrix;
 use foundry::iterate_over_component;
 use crate::gear_core::{
     rendering::{
-        mesh::MeshRenderer,
+        geometry::mesh::MeshRenderer,
         camera::CameraComponent,
         lighting::light::MainLight,
+        shaders::{Shader, ShaderProgram, ShaderProgramRef},
     },
     geometry::transform::Transform,
 };
-
-use super::{shaders::{ShaderProgram, Shader}, mesh::{Mesh, MeshType, self}};
 
 
 /// R is the renderer itself

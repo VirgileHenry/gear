@@ -8,6 +8,7 @@ pub struct Vertex {
     uv: cgmath::Vector2::<f32>,
 }
 
+
 impl Vertex {
     pub fn new(p0: f32, p1: f32, p2: f32, n0: f32, n1: f32, n2: f32, u: f32, v: f32) -> Vertex {
         Vertex { 
