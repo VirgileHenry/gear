@@ -1,5 +1,7 @@
 extern crate gl;
 extern crate cgmath;
+
+
 use std::ffi::{CString, CStr};
 use std::fs;
 
@@ -337,3 +339,4 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
     unsafe { CString::from_vec_unchecked(buffer) }
 }
 
+pub(crate) mod shaders_files;

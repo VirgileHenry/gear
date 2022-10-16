@@ -3,18 +3,7 @@ extern crate sdl2;
 extern crate gl;
 extern crate foundry;
 use std::any::Any;
-use crate::gear_core::{
-    events::event_handling::{
-        EventHandling, 
-        DefaultEventHandler
-    }, engine::{
-        EngineMessage,
-    },
-    rendering::renderer::{
-        Renderer,
-        DefaultOpenGlRenderer
-    },
-};
+use crate::gear_core::*;
 
 pub struct GlGameWindow {
     _sdl: sdl2::Sdl,
@@ -31,7 +20,22 @@ impl GlGameWindow {
         // initialize the window
         let sdl = sdl2::init().unwrap();
         let video_subsystem = sdl.video().unwrap();
-    
+        let gl_attr = video_subsystem.gl_attr();
+
+        // Don't use deprecated OpenGL functions
+        gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+
+        // Set OpenGL version to 3.3
+        gl_attr.set_context_version(3, 3);
+
+        // Enable anti-aliasing
+        gl_attr.set_multisample_buffers(1);
+        gl_attr.set_multisample_samples(4);
+
+        assert_eq!(gl_attr.context_profile(), sdl2::video::GLProfile::Core);
+        assert_eq!(gl_attr.context_version(), (3, 3));
+
+
         let window = video_subsystem
             .window("Gear Engine v0.1.0", 900, 600) // name and default size
             .opengl() // opengl flag so we can use opengl
@@ -43,6 +47,7 @@ impl GlGameWindow {
 
         let gl_context = window.gl_create_context().unwrap();
         let _gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+
 
         let event_handling_system = match event_handler {
             Some(handler) => handler,
