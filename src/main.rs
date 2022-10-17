@@ -1,9 +1,17 @@
-mod gear_core;
+pub mod gear_core;
+pub mod modules;
 
 use foundry::{create_entity, ecs::system::Updatable, iterate_over_component_mut};
 use gear_core::{engine::Engine, rendering::{geometry::mesh::{MeshRenderer, MeshType}, material::{Material, MonochromeMaterialProperties}, shaders::ShaderProgram, renderer::DefaultOpenGlRenderer}};
 
 use crate::gear_core::{rendering::{camera::CameraComponent, geometry::mesh::Mesh, opengl::color::Color, lighting::light::MainLight}, geometry::transform::Transform};
+
+
+use crate::modules::network::{
+    server::Server,
+};
+
+
 
 fn main() {
     // create the engine with the window
@@ -21,7 +29,7 @@ fn main() {
     let mesh = MeshType::Owned(Mesh::sphere(1.0, 40));
     let mesh2 = MeshType::Owned(Mesh::cube(1.0));
     let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
-    let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.7, 0.2, 0.5)}));
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
@@ -48,11 +56,15 @@ fn main() {
     let mut camera_component = CameraComponent::new_perspective_camera(80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(world.components; Transform::origin().translated(0.0, 1.5, -5.0).euler(0.0, 3.1415, 0.0), camera_component);
-    let sun = create_entity!(world.components; Transform::origin().translated(-4.0, -4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let sun = create_entity!(world.components; Transform::origin().translated(-4.0, -4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.0, 0.0), Color::from_rgb(0.2, 0.2, 0.2)));
     // todo doesn't work 
     world.set_entity_active(&sun, false);
 
     world.register_system(system, 10);
+    
+    // server test ?
+    world.register_system(foundry::ecs::system::System::new(Box::new(Server::new(10).unwrap()), foundry::ecs::system::UpdateFrequency::PerFrame), 3);
+    
     // start main loop
     engine.main_loop();
 
