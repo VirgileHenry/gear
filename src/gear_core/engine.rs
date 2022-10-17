@@ -5,17 +5,7 @@ use foundry::{
         system::System, entity::Entity,
     },  
 };
-use crate::gear_core::{
-    rendering::opengl::gl_window::GlGameWindow,
-    events::event_handling::{
-        EventHandling,
-        DefaultEventHandler,
-    },
-    rendering::renderer::{
-        DefaultOpenGlRenderer,
-        Renderer
-    },
-};
+use crate::gear_core::*;
 use std::{time::{Instant, Duration}, any::Any};
 
 

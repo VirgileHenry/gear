@@ -24,7 +24,7 @@ pub struct DefaultOpenGlRenderer {
 
 impl DefaultOpenGlRenderer {
     pub fn new() -> DefaultOpenGlRenderer {
-        use crate::gear_core::rendering::shaders_files::shaders::{MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER};
+        use super::shaders::shaders_files::{MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER};
         DefaultOpenGlRenderer {
             shader_programs: HashMap::new(),
             missing_shader_program: ShaderProgram::simple_program(MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER)

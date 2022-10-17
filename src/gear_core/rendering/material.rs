@@ -1,3 +1,6 @@
+
+// OpenGL dependency !!
+
 use gl::DeleteTextures;
 
 use super::shaders::{ShaderProgramRef, ShaderProgram};
@@ -36,12 +39,4 @@ pub trait MaterialProperties {
     fn set_properties_to_shader(&self, shader: &ShaderProgram);
 }
 
-pub struct MonochromeMaterialProperties {
-    pub color: Color,
-}
-
-impl MaterialProperties for MonochromeMaterialProperties {
-    fn set_properties_to_shader(&self, shader: &ShaderProgram) {
-        shader.set_vec3("color", self.color.as_vector());
-    }
-}
+pub mod material_presets;

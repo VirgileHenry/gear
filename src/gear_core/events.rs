@@ -1,1 +1,6 @@
-pub mod event_handling;
+mod event_handling;
+
+pub use event_handling::{
+    DefaultEventHandler,
+    EventHandling,
+};

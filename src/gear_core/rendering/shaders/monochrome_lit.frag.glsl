@@ -18,15 +18,25 @@ out vec4 Color;
 
 void main()
 {
+    // ambiant lighting
+    vec3 ambient = ambientColor;
+
+    // direct lighting
     vec3 normal = normalize(IN.Normal);
-    vec3 ambient = ambientColor * color;
     vec3 lightDir = normalize(mainLightPos - IN.Position);
     vec3 diffuse = max(dot(normal, lightDir), 0.0) * mainLightColor;
+
+    // specular lighting
     float specularStrength = 0.5f;
     vec3 viewDir = normalize(camPos - IN.Position);
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * mainLightColor; 
+    vec3 specular = specularStrength * spec * mainLightColor;
+
+    // final color in linear space
     vec3 result = (ambient + diffuse + specular) * color;
-    Color = vec4(result * color, 1.0f);
+
+    // gamma correction
+    vec3 result_srgb = pow(result, vec3(1./2.2));
+    Color = vec4(result_srgb, 1.0f);
 }
