@@ -1,4 +1,6 @@
-use std::net::{TcpStream, UdpSocket, SocketAddr};
+use std::{net::{TcpStream, UdpSocket, SocketAddr}, time::Duration};
+
+use foundry::ecs::system::Updatable;
 
 enum ConnectionStatus{
     Disconnected, 
@@ -19,18 +21,38 @@ impl Client {
         }
     }
 
-    pub fn try_connect_tcp(&mut self, address: SocketAddr) -> Result<(), String> {
-        match TcpStream::connect(address) {
+    pub fn try_connect_tcp(mut self, address: SocketAddr) -> Result<Client, String> {
+        println!("[NETWORK CLIENT] -> Attempting connection to {address}.");
+        match TcpStream::connect(&address) {
             Ok(stream) => {
+                match stream.set_nonblocking(true) {
+                    Err(e) => println!("[NETWORK CLIENT] -> unable to set client as nonblocking ({e}). All client actions may freeze the engine."),
+                    _ => {},
+                }
                 self.connection = match self.connection {
                     ConnectionStatus::Disconnected => ConnectionStatus::TcpOnly(stream),
                     ConnectionStatus::TcpOnly(_old_stream) => ConnectionStatus::TcpOnly(stream), // previous stream will be dropped
                     ConnectionStatus::UdpOnly(udp_stream) => ConnectionStatus::TcpAndUdp(stream, udp_stream),
                     ConnectionStatus::TcpAndUdp(_old_stream, udp_stream) => ConnectionStatus::TcpAndUdp(stream, udp_stream), // previous stream will be dropped
                 };
-                Ok(())
+                println!("[NETWORK CLIENT] -> Connected to server at {address}");
+                Ok(self)
             }
-            Err(e) => Err(format!("Unable to connect to {address} : {e}")) 
+            Err(e) => Err(format!("[NETWORK CLIENT] -> Unable to connect to {address} : {e}")) 
         }
+    }
+}
+
+impl Updatable for Client {
+    fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
+        
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }

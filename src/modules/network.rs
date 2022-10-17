@@ -1,2 +1,5 @@
-pub mod server;
-pub mod client;
+mod server;
+mod client;
+
+pub use server::*;
+pub use client::*;

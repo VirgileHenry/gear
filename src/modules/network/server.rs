@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    marker::PhantomData,
     net::{
         UdpSocket, TcpStream, TcpListener, SocketAddr,
     },
@@ -9,7 +8,6 @@ use std::{
 use foundry::ecs::system::Updatable;
 
 
-/// M is the message enum 
 pub struct Server {
     clients: HashMap<usize, Client>,
     max_client_count: usize,
@@ -20,35 +18,35 @@ pub struct Server {
 
 
 impl Server {
-    pub fn new(max_client_count: usize) -> Result<Server, String> {
+    pub fn new(port: usize, max_client_count: usize) -> Result<Server, String> {
         Ok(Server { 
             clients: HashMap::new(),
             max_client_count: max_client_count,
             current_client_count: 0,
             next_available_id: 1,
-            tcp_listener: match TcpListener::bind("127.0.0.1:31415") {
+            tcp_listener: match TcpListener::bind(format!("127.0.0.1:{port}")) {
                 Ok(listener) => {
                     match listener.set_nonblocking(true) {
-                        Ok(()) => {},
+                        Ok(()) => println!("[NETWORK SERVER] -> server started on port {port}"),
                         Err(e) => println!("[GEAR ENGINE] -> unable to set tcp listener as non-blocking. This will cause a engine freeze until connections are received ({})", e),
                     };
                     listener
                 },
-                Err(e) => return Err("Unable to create server : can't bind tcp listener".to_string()),
+                Err(e) => return Err(format!("Unable to create server : can't bind tcp listener : {e}").to_string()),
             },
         })
     }
 
     pub fn handle_incoming_connection(&mut self, stream: TcpStream, adress: SocketAddr) {
-        println!("[SERVER] -> incoming connection : {adress}.");
+        println!("[NETWORK SERVER] -> incoming connection : {adress}.");
         if self.current_client_count < self.max_client_count {
-            println!("[SERVER] -> accepted connection as client {}.", self.next_available_id);
+            println!("[NETWORK SERVER] -> accepted connection as client {}.", self.next_available_id);
             self.clients.insert(self.next_available_id, Client::new(self.next_available_id, stream));
             self.current_client_count += 1;
             self.next_available_id += 1;
         }
         else {
-            println!("[SERVER] -> rejected connection : server full.");
+            println!("[NETWORK SERVER] -> rejected connection : server full.");
             stream.shutdown(std::net::Shutdown::Both);
         }
 
@@ -87,7 +85,7 @@ impl Updatable for Server {
 
 
 /// Server representation of a client
-pub struct Client {
+struct Client {
     id: usize,
     tcp_connection: TcpStream,
     udp_connection: Option<UdpSocket>,
