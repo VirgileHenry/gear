@@ -18,6 +18,6 @@ void main()
 {
     gl_Position = projectionMat * cameraWorldPos * modelWorldPos * vec4(inPos, 1.0);
     OUT.Position = vec3(modelWorldPos * vec4(inPos, 1.0));
-    OUT.Normal = mat3(transpose(inverse(modelWorldPos))) * inNormal;
+    OUT.Normal = mat3(transpose(inverse(modelWorldPos))) * inNormal; // todo : compute once in cpu
     OUT.UV = inUv;
 }
