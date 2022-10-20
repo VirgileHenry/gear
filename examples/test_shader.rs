@@ -1,5 +1,4 @@
 
-use foundry::{create_entity, ecs::system::Updatable, iterate_over_component_mut};
 use Gear::*;
 
 fn main() {
@@ -38,7 +37,7 @@ fn main() {
     let world = engine.get_world();
 
     let rotater = RotatingSystem{timer:0.0};
-    let system = foundry::ecs::system::System::new(Box::new(rotater), foundry::ecs::system::UpdateFrequency::PerFrame);
+    let system = System::new(Box::new(rotater), UpdateFrequency::PerFrame);
 
     let _sphere = create_entity!(world.components; Transform::origin().translated(0.0, 1.8, 0.0), mesh_renderer);
     let _cube = create_entity!(world.components; Transform::origin(), mesh_renderer2);
@@ -60,7 +59,7 @@ struct RotatingSystem {
 }
 
 impl Updatable for RotatingSystem {
-    fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         self.timer += delta;
         for (transform, _other) in iterate_over_component_mut!(components; Transform, MeshRenderer) {
             transform.rotate(cgmath::Vector3::new(0.0, 1.0, 0.0), 1.0 * delta);

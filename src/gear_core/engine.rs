@@ -1,10 +1,4 @@
-extern crate foundry;
-use foundry::{
-    ecs::{
-        world::World,
-        system::System, entity::Entity,
-    },  
-};
+use foundry::*;
 use crate::gear_core::*;
 use std::{time::{Instant, Duration}, any::Any};
 
@@ -27,7 +21,7 @@ impl Engine {
     pub fn with_gl_window(mut self, event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Engine {
         // create the window system and add it
         let game_window = GlGameWindow::new(event_handler, renderer);
-        let window_system = System::new(Box::new(game_window), foundry::ecs::system::UpdateFrequency::PerFrame);
+        let window_system = System::new(Box::new(game_window), UpdateFrequency::PerFrame);
         self.world.register_system(window_system, 0);
         
         self

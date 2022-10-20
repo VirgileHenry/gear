@@ -1,9 +1,6 @@
-
-extern crate sdl2;
-extern crate gl;
-extern crate foundry;
 use std::any::Any;
 use crate::gear_core::*;
+use foundry::*;
 
 pub struct GlGameWindow {
     _sdl: sdl2::Sdl,
@@ -95,8 +92,8 @@ impl GlGameWindow {
 
 }
 
-impl foundry::ecs::system::Updatable for GlGameWindow {
-    fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, _delta: f32, user_data: &mut dyn Any) {
+impl Updatable for GlGameWindow {
+    fn update(&mut self, components: &mut ComponentTable, _delta: f32, user_data: &mut dyn Any) {
         unsafe {
             // clear the window
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

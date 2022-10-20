@@ -5,7 +5,7 @@ use std::{
     },
 };
 
-use foundry::ecs::system::Updatable;
+use foundry::*;
 
 
 pub struct Server {
@@ -59,7 +59,7 @@ impl Server {
 }
 
 impl Updatable for Server {
-    fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
         // process any incoming requests
         loop {
             match self.tcp_listener.accept() {

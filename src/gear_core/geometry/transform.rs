@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 use cgmath::Quaternion;
-use foundry::ecs::{component_table::ComponentTable, entity::Entity};
-
-extern crate cgmath;
+use foundry::*;
 
 #[allow(dead_code)]
 pub struct Transform {

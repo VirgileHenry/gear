@@ -1,6 +1,6 @@
 use std::{net::{TcpStream, UdpSocket, SocketAddr}, time::Duration};
 
-use foundry::ecs::system::Updatable;
+use foundry::*;
 
 enum ConnectionStatus{
     Disconnected, 
@@ -21,7 +21,7 @@ impl Client {
         }
     }
 
-    pub fn try_connect_tcp(mut self, address: SocketAddr) -> Result<Client, String> {
+    pub fn try_connect_tcp(mut self, address: SocketAddr) -> Result<Client, (Client, String)> {
         println!("[NETWORK CLIENT] -> Attempting connection to {address}.");
         match TcpStream::connect(&address) {
             Ok(stream) => {
@@ -38,13 +38,13 @@ impl Client {
                 println!("[NETWORK CLIENT] -> Connected to server at {address}");
                 Ok(self)
             }
-            Err(e) => Err(format!("[NETWORK CLIENT] -> Unable to connect to {address} : {e}")) 
+            Err(e) => Err((self, format!("[NETWORK CLIENT] -> Unable to connect to {address} : {e}")))
         }
     }
 }
 
 impl Updatable for Client {
-    fn update(&mut self, components: &mut foundry::ecs::component_table::ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
         
     }
 

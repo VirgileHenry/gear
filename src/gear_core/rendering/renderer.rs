@@ -1,6 +1,6 @@
 use std::{collections::HashMap};
 use cgmath::SquareMatrix;
-use foundry::iterate_over_component;
+use foundry::*;
 use crate::gear_core::{
     rendering::{
         geometry::mesh::MeshRenderer,
@@ -14,7 +14,7 @@ use crate::gear_core::{
 
 /// R is the renderer itself
 pub trait Renderer {
-    fn render(&self, components: &mut foundry::ecs::component_table::ComponentTable);
+    fn render(&self, components: &mut ComponentTable);
 }
 
 pub struct DefaultOpenGlRenderer {
@@ -38,7 +38,7 @@ impl DefaultOpenGlRenderer {
 }
 
 impl Renderer for DefaultOpenGlRenderer {
-    fn render(&self, components: &mut foundry::ecs::component_table::ComponentTable) {
+    fn render(&self, components: &mut ComponentTable) {
         // found main camera
 
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
