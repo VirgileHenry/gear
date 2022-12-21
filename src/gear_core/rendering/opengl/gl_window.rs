@@ -1,50 +1,47 @@
-use std::any::Any;
+use std::{any::Any, sync::mpsc::Receiver};
 use crate::gear_core::*;
 use foundry::*;
+use gl::Disable;
+use glfw::{Context, InitError, Window, WindowEvent, Glfw};
 
 pub struct GlGameWindow {
-    _sdl: sdl2::Sdl,
-    _video_subsystem: sdl2::VideoSubsystem,
-    window: sdl2::video::Window,
-    event_pump: sdl2::EventPump,
-    _gl_context: sdl2::video::GLContext,
+    glfw: Glfw,
+    window: Window,
+    events: Receiver<(f64, WindowEvent)>,
     event_handler: Box<dyn EventHandling>,
     gl_renderer: Box<dyn Renderer>,
 }
 
+#[derive(Debug)]
+pub enum GlWindowError {
+    GlfwInitError(InitError),
+    GlfwWindowCreationError,
+    GlContextInitError,
+}
+
 impl GlGameWindow {
-    pub fn new(event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> GlGameWindow {
-        // initialize the window
-        let sdl = sdl2::init().unwrap();
-        let video_subsystem = sdl.video().unwrap();
-        let gl_attr = video_subsystem.gl_attr();
+    pub fn new(event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Result<GlGameWindow, GlWindowError>  {
+        // initialize glfw and the window
+        let mut glfw = match glfw::init(glfw::FAIL_ON_ERRORS) {
+            Ok(glfw) => glfw,
+            Err(e) => return Err(GlWindowError::GlfwInitError(e)) 
+        };
 
-        // Don't use deprecated OpenGL functions
-        gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+        // todo : change this to make it user friendly
+        let width = 900;
+        let height = 600;
+        let title = "Gear Engine V0.1.0";
+        let mode = glfw::WindowMode::Windowed;
 
-        // Set OpenGL version to 3.3
-        gl_attr.set_context_version(3, 3);
+        let (mut window, events) = match glfw.create_window(width, height, title, mode) {
+            Some(result) => result,
+            None => return Err(GlWindowError::GlfwWindowCreationError),
+        };
 
-        // Enable anti-aliasing
-        gl_attr.set_multisample_buffers(1);
-        gl_attr.set_multisample_samples(4);
+        window.make_current();
+        window.set_key_polling(true);
 
-        assert_eq!(gl_attr.context_profile(), sdl2::video::GLProfile::Core);
-        assert_eq!(gl_attr.context_version(), (3, 3));
-
-
-        let window = video_subsystem
-            .window("Gear Engine v0.1.0", 900, 600) // name and default size
-            .opengl() // opengl flag so we can use opengl
-            .resizable() // able to resize the window
-            .build() // build the WindowBuilder into a window
-            .unwrap();
-        // create the event listener
-        let event_pump = sdl.event_pump().unwrap();
-
-        let gl_context = window.gl_create_context().unwrap();
-        let _gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
-
+        gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
         let event_handling_system = match event_handler {
             Some(handler) => handler,
@@ -65,15 +62,13 @@ impl GlGameWindow {
             gl::Enable(gl::DEPTH_TEST);
         }
     
-        return GlGameWindow {
-            _sdl: sdl,
-            _video_subsystem: video_subsystem,
-            window: window,
-            event_pump: event_pump,
-            _gl_context: gl_context,
+        return Ok(GlGameWindow {
+            glfw,
+            window,
+            events,
             event_handler: event_handling_system,
             gl_renderer: renderer_system,
-        }
+        })
     }
 
     #[allow(dead_code)]
@@ -86,8 +81,8 @@ impl GlGameWindow {
     }
 
     pub fn aspect_ratio(&self) -> f32 {
-        let (w, h) = self.window.size();
-        w as f32 / h as f32
+        let (w, h) = self.window.get_size();
+        (w as f32) / (h as f32)
     }
 
 }
@@ -104,12 +99,14 @@ impl Updatable for GlGameWindow {
         match user_data.downcast_mut::<EngineMessage>() {
             None => { // the user data was not an engine message : create a dummy callback to give to the event handler
                 let mut dummy_callback = EngineMessage::None;
-                for event in self.event_pump.poll_iter() {
+                self.glfw.poll_events();
+                for (_, event) in glfw::flush_messages(&self.events) {
                     self.event_handler.handle_event(components, event, &mut dummy_callback);
                 }
             },
             Some(callback_message) => { // get the engine callback and pass it to the event handler
-                for event in self.event_pump.poll_iter() {
+                self.glfw.poll_events();
+                for (_, event) in glfw::flush_messages(&self.events) {
                     self.event_handler.handle_event(components, event, callback_message);
                 }
             },
@@ -119,7 +116,7 @@ impl Updatable for GlGameWindow {
         self.gl_renderer.render(components);
 
         // swap the rendered buffer with the one we just draw on
-        self.window.gl_swap_window();
+        self.window.swap_buffers();
     }
 
     fn as_any(&self) -> &dyn Any {

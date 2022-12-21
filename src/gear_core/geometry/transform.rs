@@ -1,13 +1,12 @@
 use std::collections::VecDeque;
-use cgmath::Quaternion;
 use foundry::*;
 
 #[allow(dead_code)]
 pub struct Transform {
     world_pos: cgmath::Matrix4<f32>,
     local_pos: cgmath::Matrix4<f32>,
-    children: Vec<Entity>, // vec of indexes of childrens
-    parent: Option<Entity>, // None if it's a root object
+    children: Vec<EntityRef>, // vec of indexes of childrens
+    parent: Option<EntityRef>, // None if it's a root object
 }
 
 impl Transform {
@@ -78,7 +77,7 @@ impl Transform {
         self.world_pos = match _parent {Some(parent_tf) => self.local_pos * parent_tf, None => self.local_pos};
         // unimplemented!("[GEAR ENGINE] -> Transform : not updating child movement");
         // store all children to update in a deque : with their parents transform (better way to do this ? we are copying lots of 4x4 matrix)
-        let mut transforms: VecDeque<(Entity, cgmath::Matrix4<f32>)> = VecDeque::new();
+        let mut transforms: VecDeque<(EntityRef, cgmath::Matrix4<f32>)> = VecDeque::new();
         for child in self.children.iter() {
             transforms.push_back((*child, self.world_pos));
         }
@@ -86,7 +85,7 @@ impl Transform {
             match transforms.pop_front() {
                 None => break, // no more elements
                 Some(current) => {
-                    match _components.get_component_mut::<Transform>(&current.0) {
+                    match _components.get_component_mut::<Transform>(current.0) {
                         Some(current_transform) => {
                             // update this transform position
                             current_transform.recompute_world_pos(Some(current.1));

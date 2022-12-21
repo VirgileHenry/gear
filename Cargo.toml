@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 foundry = { path = "../Foundry" }
-sdl2 = { version = "0.35.2", features = ["bundled", "static-link"] }
+glfw = "0.47.0"
 gl = "0.14.0"
 cgmath = "0.18.0"
+gear-macros-derive = { path = "./deps/gear-macros-derive" }

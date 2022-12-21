@@ -26,3 +26,4 @@ pub use material::{
 pub use geometry::*;
 pub use opengl::*;
 pub use lighting::*;
+pub use shaders::*;
