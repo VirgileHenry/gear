@@ -14,7 +14,7 @@ fn main() {
 
     // create a mesh renderer from the shader program
     let mesh = MeshType::Owned(Mesh::sphere(1.0, 40));
-    let mesh2 = MeshType::Owned(Mesh::cube(1.0));
+    let mesh2 = MeshType::Owned(Mesh::cube(2.0));
     let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let mesh_renderer = MeshRenderer::new(mesh, material);

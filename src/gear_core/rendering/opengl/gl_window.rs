@@ -2,7 +2,7 @@ use std::{any::Any, sync::mpsc::Receiver};
 use crate::gear_core::*;
 use foundry::*;
 use gl::Disable;
-use glfw::{Context, InitError, Window, WindowEvent, Glfw};
+use glfw::{Context, InitError, Window, WindowEvent, Glfw, WindowHint};
 
 pub struct GlGameWindow {
     glfw: Glfw,
@@ -32,6 +32,8 @@ impl GlGameWindow {
         let height = 600;
         let title = "Gear Engine V0.1.0";
         let mode = glfw::WindowMode::Windowed;
+        // Antialiasing x4
+        glfw.window_hint(WindowHint::Samples(Some(4)));
 
         let (mut window, events) = match glfw.create_window(width, height, title, mode) {
             Some(result) => result,
