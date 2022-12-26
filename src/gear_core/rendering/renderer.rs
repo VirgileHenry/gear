@@ -83,37 +83,8 @@ impl Renderer for DefaultOpenGlRenderer {
                     // todo !
                     // set model uniform
                     current_program.set_mat4("modelWorldPos", transform.world_pos());
-                    // set material properties
-                    mesh_renderer.material().set_properties_to_shader(current_program);
-                    // bind the vertex array
-                    mesh_renderer.vao().bind();
-
                     unsafe {
-
-                        // todo : Move draw call inside the mesh renderer
-                        // (bind textures)
-                        let mut texture_index = mesh_renderer.bind_textures(gl::TEXTURE0);
-
-                        // (change states)
-                        // draw elements (glDrawArrays or glDrawElements)
-
-                        gl::DrawElements(
-                            gl::TRIANGLES, // mode
-                            mesh_renderer.triangles_len() as i32, // starting index in the enabled arrays
-                            gl::UNSIGNED_INT,
-                            0 as *const std::ffi::c_void, // number of indices to be rendered
-                        );
-
-                        // Unbinding all textures
-                        while texture_index != gl::TEXTURE0 {
-                            gl::ActiveTexture(texture_index);
-                            gl::BindTexture(gl::TEXTURE_2D, 0);
-                            texture_index -= 1;
-                        }
-
-                        // unbinding last gl::TEXTURE0
-                        gl::ActiveTexture(texture_index);
-                        gl::BindTexture(gl::TEXTURE_2D, 0);
+                        mesh_renderer.draw(current_program);
                     }
                 }
             }

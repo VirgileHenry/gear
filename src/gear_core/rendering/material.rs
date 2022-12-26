@@ -43,7 +43,7 @@ impl Material {
         self.properties.set_properties_to_shader(shader);
     }
 
-    pub(crate) unsafe fn bind_textures(&self, mut texture_index: u32) -> u32 {
+    pub unsafe fn bind_textures(&self, mut texture_index: u32) -> u32 {
         for texture in &self.textures {
             gl::ActiveTexture(texture_index);
             gl::BindTexture(gl::TEXTURE_2D, texture.get_id());
