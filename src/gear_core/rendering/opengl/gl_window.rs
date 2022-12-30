@@ -8,7 +8,6 @@ pub struct GlGameWindow {
     glfw: Glfw,
     window: Window,
     events: Receiver<(f64, WindowEvent)>,
-    event_handler: Box<dyn EventHandling>,
     gl_renderer: Box<dyn Renderer>,
 }
 
@@ -20,7 +19,7 @@ pub enum GlWindowError {
 }
 
 impl GlGameWindow {
-    pub fn new(event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Result<GlGameWindow, GlWindowError>  {
+    pub fn new(renderer: Option<Box<dyn Renderer>>) -> Result<GlGameWindow, GlWindowError>  {
         // initialize glfw and the window
         let mut glfw = match glfw::init(glfw::FAIL_ON_ERRORS) {
             Ok(glfw) => glfw,
@@ -41,14 +40,13 @@ impl GlGameWindow {
         };
 
         window.make_current();
-        window.set_key_polling(true);
+        // poll every thing for now
+        // todo : better way to chose what to poll
+        window.set_all_polling(true);
+        
+        //window.set_cursor_mode(glfw::CursorMode::Hidden);
 
         gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
-
-        let event_handling_system = match event_handler {
-            Some(handler) => handler,
-            None => Box::new(DefaultEventHandler::new()),
-        };
 
         let renderer_system = match renderer {
             Some(renderer) => renderer,
@@ -68,7 +66,6 @@ impl GlGameWindow {
             glfw,
             window,
             events,
-            event_handler: event_handling_system,
             gl_renderer: renderer_system,
         })
     }
@@ -87,6 +84,16 @@ impl GlGameWindow {
         (w as f32) / (h as f32)
     }
 
+    pub fn default_event_handling(&self, components: &mut ComponentTable, event: glfw::WindowEvent, engine_message: &mut EngineMessage) {
+        match event {
+            glfw::WindowEvent::Close => {
+                *engine_message = EngineMessage::StopEngine;
+            }
+
+            _ => {}
+        }
+    }
+
 }
 
 impl Updatable for GlGameWindow {
@@ -103,13 +110,15 @@ impl Updatable for GlGameWindow {
                 let mut dummy_callback = EngineMessage::None;
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
-                    self.event_handler.handle_event(components, event, &mut dummy_callback);
+                    self.default_event_handling(components, event.clone(), &mut dummy_callback);
+                    components.send_event(EngineEvents::WindowEvent(event));
                 }
             },
             Some(callback_message) => { // get the engine callback and pass it to the event handler
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
-                    self.event_handler.handle_event(components, event, callback_message);
+                    self.default_event_handling(components, event.clone(), callback_message);
+                    components.send_event(EngineEvents::WindowEvent(event));
                 }
             },
         };
