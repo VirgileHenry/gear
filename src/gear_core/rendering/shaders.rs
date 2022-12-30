@@ -33,11 +33,19 @@ impl ShaderProgram {
 
         let frag_shader = match Shader::from_frag_string(frag_source) {
             Ok(shader) => shader,
-            Err(error) => return Err(error),
+            Err(error) => {
+                let mut s = String::from("FRAGMENT::");
+                s.push_str(&*error);
+                return Err(s);
+            },
         };
         let vert_shader = match Shader::from_vert_string(vert_source) {
             Ok(shader) => shader,
-            Err(error) => return Err(error),
+            Err(error) => {
+                let mut s = String::from("VERTEX::");
+                s.push_str(&*error);
+                return Err(s);
+            },
         };
         unsafe { 
             gl::AttachShader(program_id, frag_shader.id());

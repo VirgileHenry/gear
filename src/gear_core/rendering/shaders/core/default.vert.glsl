@@ -13,7 +13,7 @@ out VS_OUTPUT {
     vec3 Normal;
     vec2 UV;
 } OUT;
-  
+
 void main()
 {
     gl_Position = projectionMat * cameraWorldPos * modelWorldPos * vec4(inPos, 1.0);

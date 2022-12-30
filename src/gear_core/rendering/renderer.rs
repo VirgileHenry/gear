@@ -10,6 +10,7 @@ use crate::gear_core::{
     },
     geometry::transform::Transform,
 };
+use gl::types::*;
 
 
 /// R is the renderer itself
@@ -53,6 +54,12 @@ impl Renderer for DefaultOpenGlRenderer {
                 }
             }
 
+            // Set front cull faces on
+            unsafe {
+                gl::Enable(gl::CULL_FACE);
+                gl::CullFace(gl::FRONT);
+            }
+
             for (id, vec) in rendering_map.into_iter() {
                 // switch to render program
                 let current_program = match self.shader_programs.get(&id) {
@@ -76,20 +83,8 @@ impl Renderer for DefaultOpenGlRenderer {
                     // todo !
                     // set model uniform
                     current_program.set_mat4("modelWorldPos", transform.world_pos());
-                    // set material properties
-                    mesh_renderer.material().set_properties_to_shader(current_program);
-                    // bind the vertex array
-                    mesh_renderer.vao().bind();
-                    // (bind textures)
-                    // (change states)
-                    // draw elements (glDrawArrays or glDrawElements)
                     unsafe {
-                        gl::DrawElements(
-                            gl::TRIANGLES, // mode
-                            mesh_renderer.triangles_len() as i32,             // starting index in the enabled arrays
-                            gl::UNSIGNED_INT,
-                            0 as *const std::ffi::c_void, // number of indices to be rendered
-                        );
+                        mesh_renderer.draw(current_program);
                     }
                 }
             }

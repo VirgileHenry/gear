@@ -13,16 +13,25 @@ fn main() {
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
 
+    let unlit_tex_program = ShaderProgram::simple_program(
+        UNLIT_TEX_FRAG_SHADER,
+        DEFAULT_VERT_SHADER
+    ).expect("Unable to compile shaders !");
+
     // create a mesh renderer from the shader program
     let mesh = MeshType::Owned(Mesh::sphere(1.0, 40));
-    let mesh2 = MeshType::Owned(Mesh::cube(1.0));
+    let mesh2 = MeshType::Owned(Mesh::cube(2.0));
+
     let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
-    let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
+    let mut material2 = Material::from_program(&unlit_tex_program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
+    material2.attach_texture("minecraft_dirt.png");
+
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
     // register the shader program in the renderer
     renderer.register_shader_program(program);
+    renderer.register_shader_program(unlit_tex_program);
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;
     match engine.get_gl_window_mut() {
@@ -46,7 +55,7 @@ fn main() {
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(0.0, 1.5, -5.0).euler(0.0, 3.1415, 0.0), camera_component);
     let sun = create_entity!(&mut world.components; Transform::origin().translated(-4.0, -4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
     // todo doesn't work
-    world.set_entity_active(sun, false);
+    //world.set_entity_active(sun, false);
 
     world.register_system(system, 10);
     // start main loop
