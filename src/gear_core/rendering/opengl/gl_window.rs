@@ -111,7 +111,6 @@ impl Updatable for GlGameWindow {
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), &mut dummy_callback);
-                    println!("sending event : {:?}", event);
                     components.send_event(EngineEvents::WindowEvent(event));
                 }
             },
@@ -119,7 +118,6 @@ impl Updatable for GlGameWindow {
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), callback_message);
-                    println!("sending event : {:?}", event);
                     components.send_event(EngineEvents::WindowEvent(event));
                 }
             },
