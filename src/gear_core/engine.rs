@@ -18,9 +18,9 @@ impl Engine {
         }
     }
 
-    pub fn with_gl_window(mut self, event_handler: Option<Box<dyn EventHandling>>, renderer: Option<Box<dyn Renderer>>) -> Engine {
+    pub fn with_gl_window(mut self, renderer: Option<Box<dyn Renderer>>) -> Engine {
         // create the window system and add it
-        match GlGameWindow::new(event_handler, renderer) {
+        match GlGameWindow::new(renderer) {
             Ok(game_window) => {
                 let window_system = System::new(Box::new(game_window), UpdateFrequency::PerFrame);
                 self.world.register_system(window_system, 0);
