@@ -7,7 +7,7 @@ use gear_macros_derive::{NetworkSerializable};
 fn main() {
     // create the engine with the window
     let mut engine = Engine::new() // creates the engine
-        .with_gl_window(Some(Box::new(EventHandler{})), None); // with a window
+        .with_gl_window(None); // with a window
 
     // create a renderer and give shaders to it
     let mut renderer = DefaultOpenGlRenderer::new();
@@ -146,22 +146,4 @@ struct Player {
 
 struct PlayerController {
     input: f32,
-}
-
-// need a custom event handler
-
-struct EventHandler {
-
-}
-
-impl EventHandling for EventHandler {
-    fn handle_event(&mut self, components: &mut ComponentTable, event: glfw::WindowEvent, engine_message_callback: &mut EngineMessage) {
-        
-
-        match event {
-
-
-            _ => {},
-        }
-    }
 }

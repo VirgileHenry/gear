@@ -4,7 +4,7 @@ use Gear::*;
 fn main() {
     // create the engine with the window
     let mut engine = Engine::new() // creates the engine
-        .with_gl_window(None, None); // with a window
+        .with_gl_window(None); // with a window
 
     // create a renderer and give shaders to it
     let mut renderer = DefaultOpenGlRenderer::new();
