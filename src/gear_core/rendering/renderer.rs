@@ -56,8 +56,11 @@ impl Renderer for DefaultOpenGlRenderer {
 
             // Set front cull faces on
             unsafe {
+                gl::ClearColor(0.0, 0.0, 0.0, 1.0);
                 gl::Enable(gl::CULL_FACE);
                 gl::CullFace(gl::FRONT);
+                gl::Enable(gl::DEPTH_TEST);
+                gl::DepthFunc(gl::LESS);
             }
 
             for (id, vec) in rendering_map.into_iter() {
@@ -68,8 +71,8 @@ impl Renderer for DefaultOpenGlRenderer {
                 };
                 current_program.set_used();
                 // set camera uniform
-                current_program.set_mat4("cameraWorldPos", cam_transform.world_pos().invert().unwrap());
-                current_program.set_mat4("projectionMat", camera.view_matrix());
+                current_program.set_mat4("viewMat", cam_transform.world_pos().invert().unwrap());
+                current_program.set_mat4("projectionMat", camera.get_perspective_mat());
                 current_program.set_vec3("camPos", cam_transform.position());
                 // set main light scene
                 for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
@@ -82,7 +85,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 for (transform, mesh_renderer) in vec.into_iter() {
                     // todo !
                     // set model uniform
-                    current_program.set_mat4("modelWorldPos", transform.world_pos());
+                    current_program.set_mat4("modelMat", transform.world_pos());
                     unsafe {
                         mesh_renderer.draw(current_program);
                     }

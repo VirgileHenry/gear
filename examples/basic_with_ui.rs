@@ -20,6 +20,8 @@ fn main() {
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
+    let mut ui_manager = UIManager::new(&mut renderer);
+
     // register the shader program in the renderer
     renderer.register_shader_program(program); // todo : automate this task
 
@@ -35,6 +37,8 @@ fn main() {
 
     // create cube and camera entity
     let world = engine.get_world();
+
+    ui_manager.add_new_layer(world);
 
     let rotater = RotatingSystem{timer:0.0};
     let system = System::new(Box::new(rotater), UpdateFrequency::PerFrame);
@@ -62,7 +66,7 @@ impl Updatable for RotatingSystem {
     fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         self.timer += delta;
         for (transform, _other) in iterate_over_component_mut!(components; Transform, MeshRenderer) {
-            transform.rotate(cgmath::Vector3::new(0.0, 1.0, 0.0), 1.0 * delta);
+            //transform.rotate(cgmath::Vector3::new(0.0, 0.0, 1.0), 1.0 * delta);
         }
     }
 

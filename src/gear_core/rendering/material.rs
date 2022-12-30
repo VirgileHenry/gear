@@ -57,5 +57,7 @@ pub trait MaterialProperties {
     fn set_properties_to_shader(&self, shader: &ShaderProgram);
 }
 
+
+
 pub mod material_presets;
 mod texture;

@@ -7,6 +7,7 @@ use crate::gear_core::rendering::{
     material::Material,
     opengl,
 };
+use cgmath::Transform;
 use crate::ShaderProgram;
 
 pub struct Mesh {
@@ -63,11 +64,11 @@ impl MeshRenderer {
         }
     }
 
-    pub fn vao(&self) -> &opengl::buffers::VertexArray {
+    fn vao(&self) -> &opengl::buffers::VertexArray {
         &self.vao
     }
 
-    pub fn triangles_len(&self) -> usize {
+    fn triangles_len(&self) -> usize {
         match &self.mesh {
             MeshType::Owned(mesh) => mesh.triangles.len(),
         }

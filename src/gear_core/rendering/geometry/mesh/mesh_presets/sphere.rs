@@ -48,8 +48,8 @@ impl Mesh {
         }
 
         Mesh {
-            vertices: vertices,
-            triangles: triangles,
+            vertices,
+            triangles,
         }
     }
 }

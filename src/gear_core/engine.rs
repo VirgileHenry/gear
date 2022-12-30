@@ -1,7 +1,7 @@
 use foundry::*;
 use crate::gear_core::*;
 use std::{time::{Instant, Duration}, any::Any};
-
+use crate::ui::UIManager;
 
 pub struct Engine {
     world: World,
@@ -85,7 +85,6 @@ impl Engine {
     pub fn get_world(&mut self) -> &mut World {
         &mut self.world
     }
-
 
 }
 

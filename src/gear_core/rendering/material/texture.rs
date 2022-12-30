@@ -4,6 +4,7 @@ use gl::types::GLenum;
 
 pub struct Texture {
     id: u32,
+    dimensions: (u32, u32),
 }
 
 impl Texture {
@@ -13,7 +14,7 @@ impl Texture {
             .flipv()
             .to_rgba8();
 
-        let size = buffer.dimensions();
+        let dimensions = buffer.dimensions();
 
         let mut id = 0;
         unsafe {
@@ -45,8 +46,8 @@ impl Texture {
                 gl::TEXTURE_2D,
                 0,
                 gl::RGBA.try_into().unwrap(),
-                size.0.try_into().unwrap(),
-                size.1.try_into().unwrap(),
+                dimensions.0.try_into().unwrap(),
+                dimensions.1.try_into().unwrap(),
                 0,
                 gl::RGBA.try_into().unwrap(),
                 gl::UNSIGNED_BYTE,
@@ -55,11 +56,17 @@ impl Texture {
             gl::GenerateMipmap(gl::TEXTURE_2D);
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
-        Self { id }
+        Self {
+            id,
+            dimensions,
+        }
     }
 
     pub fn get_id(&self) -> u32 {
         self.id
+    }
+    pub fn get_dimensions(&self) -> (u32, u32) {
+        self.dimensions
     }
 
     pub unsafe fn bind(&self, texture_index: GLenum) {
