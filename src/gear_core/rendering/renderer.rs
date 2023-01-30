@@ -3,17 +3,15 @@ use cgmath::SquareMatrix;
 use foundry::*;
 use crate::gear_core::{
     rendering::{
-        geometry::mesh::MeshRenderer,
+        geometry::mesh_renderer::MeshRenderer,
         camera::CameraComponent,
         lighting::light::MainLight,
         shaders::{Shader, ShaderProgram, ShaderProgramRef},
     },
     geometry::transform::Transform,
 };
-use gl::types::*;
 
 
-/// R is the renderer itself
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
 }
@@ -40,7 +38,7 @@ impl DefaultOpenGlRenderer {
 
 impl Renderer for DefaultOpenGlRenderer {
     fn render(&self, components: &mut ComponentTable) {
-        // found main camera
+        // find main camera
 
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
             if !camera.is_main() { continue; } // check we have the main camera
@@ -54,7 +52,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 }
             }
 
-            // Set front cull faces on
+            // Set gl defaults params
             unsafe {
                 gl::ClearColor(0.0, 0.0, 0.0, 1.0);
                 gl::Enable(gl::CULL_FACE);
@@ -94,6 +92,10 @@ impl Renderer for DefaultOpenGlRenderer {
 
             break; // render only once in case there are multiple main camera component (and avoid useless shooting)
         }
+
+        // todo render UI ! 
+
+        
     }
 }
 

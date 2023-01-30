@@ -7,6 +7,7 @@ use glfw::{Context, InitError, Window, WindowEvent, Glfw, WindowHint};
 pub struct GlGameWindow {
     glfw: Glfw,
     window: Window,
+    mouse_pos: (f64, f64),
     events: Receiver<(f64, WindowEvent)>,
     gl_renderer: Box<dyn Renderer>,
 }
@@ -65,6 +66,7 @@ impl GlGameWindow {
         return Ok(GlGameWindow {
             glfw,
             window,
+            mouse_pos: (0., 0.),
             events,
             gl_renderer: renderer_system,
         })
@@ -90,11 +92,26 @@ impl GlGameWindow {
                 *engine_message = EngineMessage::StopEngine;
             }
 
+            glfw::WindowEvent::Size(width, height) => {
+                // window got resized
+                // todo : resize camera view frustrum
+
+                // recompute ui positions !
+                for ui_transform in iterate_over_component_mut!(components; UITransform) {
+                    ui_transform.recompute_screen_pos(width, height);
+                    unimplemented!(); // todo 
+                }
+            } 
+
             _ => {}
         }
     }
 
 }
+
+
+
+
 
 impl Updatable for GlGameWindow {
     fn update(&mut self, components: &mut ComponentTable, _delta: f32, user_data: &mut dyn Any) {
@@ -113,12 +130,22 @@ impl Updatable for GlGameWindow {
                     self.default_event_handling(components, event.clone(), &mut dummy_callback);
                     components.send_event(EngineEvents::WindowEvent(event));
                 }
+                let mouse_pos = self.window.get_cursor_pos();
+                if mouse_pos != self.mouse_pos {
+                    self.mouse_pos = mouse_pos;
+                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
+                }
             },
             Some(callback_message) => { // get the engine callback and pass it to the event handler
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), callback_message);
                     components.send_event(EngineEvents::WindowEvent(event));
+                }
+                let mouse_pos = self.window.get_cursor_pos();
+                if mouse_pos != self.mouse_pos {
+                    self.mouse_pos = mouse_pos;
+                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
                 }
             },
         };
