@@ -28,9 +28,9 @@ impl EventCallable for ComponentTable {
         }
 
         // call the event callbacks passing in the event and component table
-        for callback in callbacks.iter_mut() {
-            match &callback.1 {
-                Some(cb) => cb(event.clone(), self),
+        for (entity, callback) in callbacks.iter_mut() {
+            match &callback {
+                Some(cb) => cb(event.clone(), *entity, self),
                 _ => {} // should never happen 
             }
         }

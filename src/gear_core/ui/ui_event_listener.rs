@@ -11,7 +11,7 @@ pub fn ui_event_manager() -> EventListener {
     let mut result = EventListener::new();
 
     // create a callback on window events to trigger ui elements
-    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, components| {
+    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, entity, components| {
         match event {
             EngineEvents::WindowEvent(window_event) => {
                 match window_event {
@@ -48,15 +48,15 @@ pub fn ui_event_manager() -> EventListener {
                                     _ => {},
                                 }
                             }
-                            for on_press_callback in on_selected_cb.iter() {
-                                match &on_press_callback.1.0 {
-                                    Some(cb) => cb(components, *on_press_callback.0, on_press_callback.1.1),
+                            for (entity, (on_press_callback, entering)) in on_selected_cb.iter() {
+                                match &on_press_callback {
+                                    Some(cb) => cb(components, *entity, *entering),
                                     _ => {},
                                 }
                             }
-                            for callback in callbacks.iter() {
-                                match &callback.1 {
-                                    Some(cb) => cb(components, *callback.0, modifiers),
+                            for (entity, callback) in callbacks.iter() {
+                                match &callback {
+                                    Some(cb) => cb(components, *entity, modifiers),
                                     _ => {},
                                 }
                             }
@@ -79,7 +79,7 @@ pub fn ui_event_manager() -> EventListener {
         }
     }));
 
-    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, components| {
+    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, entity, components| {
         match event {
             EngineEvents::MousePosEvent(x, y) => {
                 // buttons
@@ -119,15 +119,15 @@ pub fn ui_event_manager() -> EventListener {
                 }
 
                 // call the listener callbacks ! 
-                for on_hover in on_hover_cb.iter() {
-                    match &on_hover.1.0 {
-                        Some(cb) => cb(components, *on_hover.0, on_hover.1.1),
+                for (entity, (on_hover, entering)) in on_hover_cb.iter() {
+                    match &on_hover {
+                        Some(cb) => cb(components, *entity, *entering),
                         _ => {},
                     }
                 }
-                for on_selected in on_selected_cb.iter() {
-                    match &on_selected.1.0 {
-                        Some(cb) => cb(components, *on_selected.0, on_selected.1.1),
+                for (entity, (on_selected, selecting)) in on_selected_cb.iter() {
+                    match &on_selected {
+                        Some(cb) => cb(components, *entity, *selecting),
                         _ => {},
                     }
                 }
