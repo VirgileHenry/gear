@@ -10,7 +10,7 @@ use crate::material::texture::Texture;
 
 pub struct Material {
     /// shader program to use
-    pub program_ref: ShaderProgramRef,
+    shader_program: String,
     // needs params depending on the program. Generics ?
     properties: Box<dyn MaterialProperties>,
     // textures id
@@ -18,17 +18,9 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn from_program(program: &ShaderProgram, properties: Box<dyn MaterialProperties>) -> Material {
+    pub fn from_program(program: &str, properties: Box<dyn MaterialProperties>) -> Material {
         Material {
-            program_ref: ShaderProgramRef::new(program),
-            properties: properties,
-            textures: Vec::new(),
-        }
-    }
-
-    pub fn from_ref(program_ref: ShaderProgramRef, properties: Box<dyn MaterialProperties>) -> Material {
-        Material {
-            program_ref: program_ref,
+            shader_program: program.to_string(),
             properties: properties,
             textures: Vec::new(),
         }
@@ -50,6 +42,10 @@ impl Material {
             texture_index += 1;
         }
         texture_index + 1
+    }
+
+    pub fn get_program_name(&self) -> &str {
+        &self.shader_program
     }
 }
 

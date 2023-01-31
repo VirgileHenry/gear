@@ -18,20 +18,22 @@ fn main() {
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
 
+    // register the shader program in the renderer
+    renderer.register_shader_program("defaultShader", program);
+    renderer.register_shader_program("unlitTexturePorgram", unlit_tex_program);
+
     // create a mesh renderer from the shader program
     let mesh = Mesh::sphere(1.0, 40);
     let mesh2 = Mesh::cube(2.0);
 
-    let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
-    let mut material2 = Material::from_program(&unlit_tex_program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
+    let material = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
+    let mut material2 = Material::from_program("unlitTexturePorgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
     material2.attach_texture("minecraft_dirt.png");
 
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
-    // register the shader program in the renderer
-    renderer.register_shader_program(program);
-    renderer.register_shader_program(unlit_tex_program);
+
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;
     match engine.get_gl_window_mut() {

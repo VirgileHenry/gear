@@ -15,11 +15,11 @@ fn main() {
         MONOCHROME_LIT_FRAG_SHADER,
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
-
-    let client_handler: MyClient = MyClient{player_shader: ShaderProgramRef::new(&program)};
-
+    
     // register the shader program in the renderer
-    renderer.register_shader_program(program);
+    renderer.register_shader_program("defaultShader", program);
+
+    let client_handler: MyClient = MyClient{};
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;
     match engine.get_gl_window_mut() {
@@ -58,9 +58,7 @@ pub enum NetworkMessages {
 }
 
 
-struct MyClient {
-    player_shader: ShaderProgramRef,
-}
+struct MyClient {}
 
 impl ClientHandler<NetworkMessages> for MyClient {
     fn on_connected(&mut self, components: &mut ComponentTable) -> Vec<NetworkMessages> {
@@ -101,7 +99,7 @@ impl ClientHandler<NetworkMessages> for MyClient {
             NetworkMessages::SpawnPlayer(player_id, mine, position) => {
                 let new_player = create_entity!(components; Player{id: player_id, mine: mine, position: position},
                     Transform::origin().translated(Vector3::new(player_id as f32 - 3.0, position, 0.0)),
-                    MeshRenderer::new(Mesh::sphere(0.3, 25),  Material::from_ref(self.player_shader, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
+                    MeshRenderer::new(Mesh::sphere(0.3, 25),  Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
                 if mine {
                     components.add_component(new_player, PlayerController{input: 0.0});
                 }

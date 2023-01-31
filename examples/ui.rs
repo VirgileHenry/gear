@@ -12,16 +12,18 @@ fn main() {
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
 
+    // register the shader program in the renderer
+    renderer.register_shader_program("defaultProgram", program); // todo : automate this task
+
     // create a mesh renderer from the shader program
     let mesh = Mesh::sphere(1.0, 40);
     let mesh2 = Mesh::cube(2.0);
-    let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
-    let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material = Material::from_program("defaultProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material2 = Material::from_program("defaultProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
-    // register the shader program in the renderer
-    renderer.register_shader_program(program); // todo : automate this task
+
 
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;

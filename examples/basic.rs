@@ -11,17 +11,17 @@ fn main() {
         MONOCHROME_LIT_FRAG_SHADER,
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
+    // register the shader program in the renderer
+    renderer.register_shader_program("defaultShader", program);
 
     // create a mesh renderer from the shader program
     let mesh = Mesh::sphere(1.0, 40);
     let mesh2 = Mesh::cube(2.0);
-    let material = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
-    let material2 = Material::from_program(&program, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material2 = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
 
-    // register the shader program in the renderer
-    renderer.register_shader_program(program); // todo : automate this task
 
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;
@@ -44,7 +44,7 @@ fn main() {
     let mut camera_component = CameraComponent::new_perspective_camera(80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
-    let sun = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(-4.0, -4.0, -6.0)), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let sun = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(4.0, 4.0, 6.0)), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
     
     // world.set_entity_active(sun, false);
 

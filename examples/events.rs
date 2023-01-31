@@ -13,7 +13,7 @@ fn main() {
     ).expect("Unable to compile shaders !");
 
     // register the shader program in the renderer
-    renderer.register_shader_program(program);
+    renderer.register_shader_program("defaultShader", program);
 
     // assign the renderer to the window
     match engine.get_gl_window_mut() {

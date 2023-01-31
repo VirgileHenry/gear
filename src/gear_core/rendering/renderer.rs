@@ -17,7 +17,7 @@ pub trait Renderer {
 }
 
 pub struct DefaultOpenGlRenderer {
-    shader_programs: HashMap<u32, ShaderProgram>,
+    shader_programs: HashMap<String, ShaderProgram>,
     missing_shader_program: ShaderProgram,
 }
 
@@ -31,8 +31,8 @@ impl DefaultOpenGlRenderer {
         }
     }
 
-    pub fn register_shader_program(&mut self, program: ShaderProgram) {
-        self.shader_programs.insert(program.id() as u32, program);
+    pub fn register_shader_program(&mut self, name: &str, program: ShaderProgram) {
+        self.shader_programs.insert(name.to_string(), program);
     }
 }
 
@@ -43,12 +43,12 @@ impl Renderer for DefaultOpenGlRenderer {
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
             if !camera.is_main() { continue; } // check we have the main camera
             // sort elements to render by shader to minimise the change of shader program
-            let mut rendering_map: HashMap<u32, Vec<(&Transform, &MeshRenderer)>> = HashMap::new();
+            let mut rendering_map: HashMap<&str, Vec<(&Transform, &MeshRenderer)>> = HashMap::new();
 
             for (transform, mesh) in iterate_over_component!(&components; Transform, MeshRenderer) {
-                match rendering_map.get_mut(&mesh.material.program_ref.id()) {
+                match rendering_map.get_mut(&mesh.material.get_program_name()) {
                     Some(vec) => vec.push((transform, mesh)),
-                    None => {rendering_map.insert(mesh.material.program_ref.id(), vec![(transform, mesh)]);},
+                    None => {rendering_map.insert(mesh.material.get_program_name(), vec![(transform, mesh)]);},
                 }
             }
 
@@ -63,7 +63,7 @@ impl Renderer for DefaultOpenGlRenderer {
 
             for (id, vec) in rendering_map.into_iter() {
                 // switch to render program
-                let current_program = match self.shader_programs.get(&id) {
+                let current_program = match self.shader_programs.get(id) {
                     Some(shader_program) => shader_program,
                     None => &self.missing_shader_program,
                 };
