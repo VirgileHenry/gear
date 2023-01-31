@@ -15,6 +15,7 @@ pub static UNLIT_UV_FRAG_SHADER: &str = include_str!("core/unlit_uv.frag.glsl");
 // Fragment
 pub static UI_UNLIT_UV_FRAG_SHADER: &str = include_str!("core/ui/unlit_uv.frag.glsl");
 pub static UI_DEFAULT_FRAG_SHADER: &str = include_str!("core/ui/ui_default.frag.glsl");
+pub static COPY_FRAG_SHADER: &str = include_str!("core/ui/copy.frag.glsl");
 
 // Vertex
 pub static UI_DEFAULT_VERT_SHADER: &str = include_str!("core/ui/default.vert.glsl");

@@ -1,16 +1,17 @@
-use std::{collections::HashMap};
-use cgmath::SquareMatrix;
-use foundry::*;
 use crate::gear_core::{
+    geometry::transform::Transform,
     rendering::{
-        geometry::mesh_renderer::MeshRenderer,
         camera::CameraComponent,
+        geometry::mesh_renderer::MeshRenderer,
         lighting::light::MainLight,
         shaders::{Shader, ShaderProgram, ShaderProgramRef},
     },
-    geometry::transform::Transform,
 };
-
+use crate::{COPY_FRAG_SHADER, Material, Mesh, NoParamMaterialProperties, UI_DEFAULT_FRAG_SHADER, UI_DEFAULT_VERT_SHADER, UI_UNLIT_UV_FRAG_SHADER};
+use cgmath::{SquareMatrix, Vector3};
+use foundry::*;
+use gl::types::*;
+use std::collections::HashMap;
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -19,15 +20,27 @@ pub trait Renderer {
 pub struct DefaultOpenGlRenderer {
     shader_programs: HashMap<String, ShaderProgram>,
     missing_shader_program: ShaderProgram,
+
+    render_quad: MeshRenderer,
+    copy_shader: ShaderProgram,
 }
 
 impl DefaultOpenGlRenderer {
     pub fn new() -> DefaultOpenGlRenderer {
+
+        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, UI_DEFAULT_VERT_SHADER)
+            .expect("Error while generating UI shader");
+        let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
+        let material = Material::from_program("copy_shader", Box::new(NoParamMaterialProperties{}));
+        let mesh_renderer = MeshRenderer::new(mesh, material);
+
         use super::shaders::shaders_files::{MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER};
         DefaultOpenGlRenderer {
             shader_programs: HashMap::new(),
             missing_shader_program: ShaderProgram::simple_program(MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER)
                 .expect("[GEAR ENGINE] -> [RENDERER] -> Unable to compile default shaders : "),
+            render_quad: mesh_renderer,
+            copy_shader,
         }
     }
 
@@ -37,11 +50,37 @@ impl DefaultOpenGlRenderer {
 }
 
 impl Renderer for DefaultOpenGlRenderer {
+
     fn render(&self, components: &mut ComponentTable) {
-        // find main camera
+
+        self.render_camera_buffers(components);
+        for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
+            if camera.is_main() {
+                unsafe {
+                    gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+                    gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+                    gl::ActiveTexture(gl::TEXTURE0);
+                    camera.get_color_attachment().bind();
+                    self.copy_shader.set_used();
+                    self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos());
+                    self.render_quad.draw(&self.copy_shader);
+                }
+            }
+        }
+
+    }
+
+}
+
+impl DefaultOpenGlRenderer {
+    fn render_camera_buffers(&self, components: &mut ComponentTable) {
+        // found main camera
 
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
-            if !camera.is_main() { continue; } // check we have the main camera
+            // todo: render only if needed
+            // todo: render main at the end ?
+            // todo: sort once ?
             // sort elements to render by shader to minimise the change of shader program
             let mut rendering_map: HashMap<&str, Vec<(&Transform, &MeshRenderer)>> = HashMap::new();
 
@@ -52,14 +91,19 @@ impl Renderer for DefaultOpenGlRenderer {
                 }
             }
 
-            // Set gl defaults params
+            // Set front cull faces on
             unsafe {
                 gl::ClearColor(0.0, 0.0, 0.0, 1.0);
                 gl::Enable(gl::CULL_FACE);
                 gl::CullFace(gl::FRONT);
                 gl::Enable(gl::DEPTH_TEST);
                 gl::DepthFunc(gl::LESS);
+                gl::Viewport(0, 0, camera.get_dimensions().0 as GLsizei, camera.get_dimensions().1 as GLsizei);
+                camera.bind();
+                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
+
+            let view_mat = cam_transform.world_pos().invert();
 
             for (id, vec) in rendering_map.into_iter() {
                 // switch to render program
@@ -69,7 +113,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 };
                 current_program.set_used();
                 // set camera uniform
-                current_program.set_mat4("viewMat", cam_transform.world_pos().invert().unwrap());
+                current_program.set_mat4("viewMat", view_mat.unwrap());
                 current_program.set_mat4("projectionMat", camera.get_perspective_mat());
                 current_program.set_vec3("camPos", cam_transform.position());
                 // set main light scene
@@ -89,13 +133,15 @@ impl Renderer for DefaultOpenGlRenderer {
                     }
                 }
             }
-
+            unsafe {
+                camera.unbind();
+            }
             break; // render only once in case there are multiple main camera component (and avoid useless shooting)
         }
 
-        // todo render UI ! 
+        // todo render UI !
 
-        
+
     }
 }
 

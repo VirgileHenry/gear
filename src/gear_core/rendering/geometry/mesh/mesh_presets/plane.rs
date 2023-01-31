@@ -21,9 +21,9 @@ impl Mesh {
 
         let vertices = vec![
             Vertex::new(corners[0].x, corners[0].y, corners[0].z, normal.x, normal.y, normal.z, 0., 0.),
-            Vertex::new(corners[1].x, corners[1].y, corners[1].z, normal.x, normal.y, normal.z, 1., 0.),
+            Vertex::new(corners[1].x, corners[1].y, corners[1].z, normal.x, normal.y, normal.z, 0., 1.),
             Vertex::new(corners[2].x, corners[2].y, corners[2].z, normal.x, normal.y, normal.z, 1., 1.),
-            Vertex::new(corners[3].x, corners[3].y, corners[3].z, normal.x, normal.y, normal.z, 0., 1.),
+            Vertex::new(corners[3].x, corners[3].y, corners[3].z, normal.x, normal.y, normal.z, 1., 0.),
         ];
 
         // connect the two triangles
