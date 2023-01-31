@@ -9,6 +9,7 @@ pub struct GlGameWindow {
     mouse_pos: (f64, f64),
     events: Receiver<(f64, WindowEvent)>,
     gl_renderer: Box<dyn Renderer>,
+    previous_pos: ((i32, i32), (i32, i32)),
 }
 
 #[derive(Debug)]
@@ -65,12 +66,14 @@ impl GlGameWindow {
             gl::Enable(gl::DEPTH_TEST);
         }
 
+
         return Ok(GlGameWindow {
             glfw,
             window,
             mouse_pos: (0., 0.),
             events,
             gl_renderer: renderer_system,
+            previous_pos: ((100, 100), (width, height)),
         });
     }
 
@@ -100,7 +103,8 @@ impl GlGameWindow {
             }
 
             glfw::WindowEvent::Size(width, height) => {
-                // window got resized
+
+                // camera resize
                 for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
                     if cam_comp.is_main() {
                         // resize it
@@ -129,8 +133,40 @@ impl GlGameWindow {
         match message {
             GlWindowMessage::SetCursorMode(mode) => self.window.set_cursor_mode(*mode),
             GlWindowMessage::SetFullScreen(fullscreen) => match fullscreen {
-                FullScreenModes::Value(val) => println!("Going full screen : {val}"),
-                FullScreenModes::Toggle => println!("Toggling fullscreen !"),
+                FullScreenModes::Value(val) => unsafe {
+                    let monitor = glfw::ffi::glfwGetPrimaryMonitor();
+                    let mode = glfw::ffi::glfwGetVideoMode(monitor);
+                    if (glfw::ffi::glfwGetWindowMonitor(self.window.window_ptr()) as *const _ == core::ptr::null()) == *val { return; }
+                    if *val {
+                        // save windowed pos state
+                        self.previous_pos = (self.window.get_pos(), self.window.get_size());
+                        // go to full screen !
+                        glfw::ffi::glfwSetWindowMonitor(self.window.window_ptr(), monitor, 0, 0, (*mode).width, (*mode).height, glfw::ffi::DONT_CARE);
+                    }
+                    else {
+                        // back to window mode !
+                        let ((x, y), (sx, sy)) = self.previous_pos;
+                        // back to windowed !
+                        glfw::ffi::glfwSetWindowMonitor(self.window.window_ptr(), core::ptr::null_mut(), x, y, sx, sy, glfw::ffi::DONT_CARE);
+                    }
+                },
+                FullScreenModes::Toggle => unsafe {
+                    let monitor = glfw::ffi::glfwGetPrimaryMonitor();
+                    let mode = glfw::ffi::glfwGetVideoMode(monitor);
+                    let fullscreen = glfw::ffi::glfwGetWindowMonitor(self.window.window_ptr()) as *const _ == core::ptr::null();
+                    if fullscreen {
+                        // save windowed pos state
+                        self.previous_pos = (self.window.get_pos(), self.window.get_size());
+                        // go to full screen !
+                        glfw::ffi::glfwSetWindowMonitor(self.window.window_ptr(), monitor, 0, 0, (*mode).width, (*mode).height, glfw::ffi::DONT_CARE);
+                    }
+                    else {
+                        // back to window mode !
+                        let ((x, y), (sx, sy)) = self.previous_pos;
+                        // back to windowed !
+                        glfw::ffi::glfwSetWindowMonitor(self.window.window_ptr(), core::ptr::null_mut(), x, y, sx, sy, glfw::ffi::DONT_CARE);
+                    }
+                },
             },
         }
     }
