@@ -105,6 +105,7 @@ impl GlGameWindow {
                     if cam_comp.is_main() {
                         // resize it
                         cam_comp.set_aspect_ratio(width as f32 / height as f32);
+                        // todo brice
                     }
                 }
 
