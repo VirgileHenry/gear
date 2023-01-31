@@ -52,6 +52,11 @@ impl Transform {
         self.recompute_world_pos();
     }
 
+    pub fn set_rotation(&mut self, rotation: Quaternion<f32>) {
+        self.rotation = rotation;
+        self.recompute_world_pos();
+    }
+
     pub fn scale(&mut self, s: f32) {
         self.scale *= s;
         self.recompute_world_pos();
