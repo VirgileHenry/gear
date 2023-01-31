@@ -1,5 +1,6 @@
 use crate::gear_core::*;
 use foundry::*;
+use gl::CLAMP_READ_COLOR;
 use glfw::{Context, Glfw, InitError, Window, WindowEvent, WindowHint};
 use std::{any::Any, sync::mpsc::Receiver};
 use glfw::ffi::glfwSetWindowSizeCallback;
@@ -110,7 +111,7 @@ impl GlGameWindow {
                     if cam_comp.is_main() {
                         // resize it
                         cam_comp.set_aspect_ratio(width as f32 / height as f32);
-                        // todo brice
+                        cam_comp.resize_viewport((width, height));
                     }
                 }
 

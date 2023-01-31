@@ -157,8 +157,4 @@ impl CameraComponent {
         self.viewport_dimensions
     }
 
-    pub fn resize(&mut self, dimensions: (i32, i32)) {
-        self.viewport_dimensions = dimensions;
-
-    }
 }
