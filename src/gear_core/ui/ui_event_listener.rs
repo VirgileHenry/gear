@@ -11,7 +11,7 @@ pub fn ui_event_manager() -> EventListener {
     let mut result = EventListener::new();
 
     // create a callback on window events to trigger ui elements
-    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, entity, components| {
+    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, entity, components, engine_message| {
         match event {
             EngineEvents::WindowEvent(window_event) => {
                 match window_event {
@@ -50,13 +50,13 @@ pub fn ui_event_manager() -> EventListener {
                             }
                             for (entity, (on_press_callback, entering)) in on_selected_cb.iter() {
                                 match &on_press_callback {
-                                    Some(cb) => cb(components, *entity, *entering),
+                                    Some(cb) => cb(components, *entity, *entering, engine_message),
                                     _ => {},
                                 }
                             }
                             for (entity, callback) in callbacks.iter() {
                                 match &callback {
-                                    Some(cb) => cb(components, *entity, modifiers),
+                                    Some(cb) => cb(components, *entity, modifiers, engine_message),
                                     _ => {},
                                 }
                             }
@@ -79,7 +79,7 @@ pub fn ui_event_manager() -> EventListener {
         }
     }));
 
-    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, entity, components| {
+    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, entity, components, engine_message| {
         match event {
             EngineEvents::MousePosEvent(x, y) => {
                 // buttons
@@ -121,13 +121,13 @@ pub fn ui_event_manager() -> EventListener {
                 // call the listener callbacks ! 
                 for (entity, (on_hover, entering)) in on_hover_cb.iter() {
                     match &on_hover {
-                        Some(cb) => cb(components, *entity, *entering),
+                        Some(cb) => cb(components, *entity, *entering, engine_message),
                         _ => {},
                     }
                 }
                 for (entity, (on_selected, selecting)) in on_selected_cb.iter() {
                     match &on_selected {
-                        Some(cb) => cb(components, *entity, *selecting),
+                        Some(cb) => cb(components, *entity, *selecting, engine_message),
                         _ => {},
                     }
                 }

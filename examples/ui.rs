@@ -56,7 +56,7 @@ fn main() {
     // let mut tf = UITransform::new(0, 0, 0., 0., 100, 100, 0., 0., 0., UIAnchorPoints::TopLeft, None);
     // tf.recalculate_screen_pos(900, 600); // hard coded for now 
     let mut button = Button::new();
-    button.on_enter = Some(Box::new(|_, _, entering| {
+    button.on_enter = Some(Box::new(|_, _, entering, _| {
         println!("button got entered : {}", entering);
     }));
     // let button = create_entity!(&mut world.components; tf, button);

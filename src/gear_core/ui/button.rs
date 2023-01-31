@@ -2,6 +2,8 @@
 use foundry::{ComponentTable, EntityRef};
 use glfw::Modifiers;
 
+use crate::EngineMessage;
+
 #[derive(Clone, Copy)]
 pub enum ButtonState {
     /// The button is idle.
@@ -16,9 +18,9 @@ pub enum ButtonState {
 
 pub struct Button {
     state: ButtonState,
-    pub on_enter: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, bool)>>,
-    pub on_selected: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, bool)>>,
-    pub callback: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, Modifiers)>>,
+    pub on_enter: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, bool, &mut EngineMessage)>>,
+    pub on_selected: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, bool, &mut EngineMessage)>>,
+    pub callback: Option<Box<dyn Fn(&mut ComponentTable, EntityRef, Modifiers, &mut EngineMessage)>>,
 }
 
 impl Button {

@@ -4,17 +4,19 @@ use std::{
 
 use foundry::{ComponentTable, iterate_over_component_mut};
 
+use crate::EngineMessage;
+
 use super::{
     engine_events::EngineEvents,
     event_listener::EventListener,
 };
 
 pub trait EventCallable {
-    fn send_event(&mut self, event: EngineEvents);
+    fn send_event(&mut self, event: EngineEvents, engine_message: &mut EngineMessage);
 }
 
 impl EventCallable for ComponentTable {
-    fn send_event(&mut self, event: EngineEvents) {
+    fn send_event(&mut self, event: EngineEvents, engine_message: &mut EngineMessage) {
         // create a map of all the events callbacks.
         let mut callbacks = BTreeMap::new();
 
@@ -30,7 +32,7 @@ impl EventCallable for ComponentTable {
         // call the event callbacks passing in the event and component table
         for (entity, callback) in callbacks.iter_mut() {
             match &callback {
-                Some(cb) => cb(event.clone(), *entity, self),
+                Some(cb) => cb(event.clone(), *entity, self, engine_message),
                 _ => {} // should never happen 
             }
         }

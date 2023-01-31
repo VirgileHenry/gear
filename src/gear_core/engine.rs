@@ -100,4 +100,10 @@ pub enum EngineState {
 pub enum EngineMessage {
     None,
     StopEngine,
+    GlWindowMessage(GlWindowMessage),
+}
+
+pub enum GlWindowMessage {
+    SetCursorMode(glfw::CursorMode),
+    SetFullScreen(bool),
 }
