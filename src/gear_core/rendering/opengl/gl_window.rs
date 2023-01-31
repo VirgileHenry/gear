@@ -1,6 +1,5 @@
 use crate::gear_core::*;
 use foundry::*;
-use gl::Disable;
 use glfw::{Context, Glfw, InitError, Window, WindowEvent, WindowHint};
 use std::{any::Any, sync::mpsc::Receiver};
 use glfw::ffi::glfwSetWindowSizeCallback;
@@ -49,8 +48,7 @@ impl GlGameWindow {
         // poll every thing for now
         // todo : better way to chose what to poll
         window.set_all_polling(true);
-
-        //window.set_cursor_mode(glfw::CursorMode::Hidden);
+        
 
         gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
@@ -104,7 +102,13 @@ impl GlGameWindow {
 
             glfw::WindowEvent::Size(width, height) => {
                 // window got resized
-                // todo : resize camera view frustrum
+                for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
+                    if cam_comp.is_main() {
+                        // resize it
+                        cam_comp.set_aspect_ratio(width as f32 / height as f32);
+                        // todo brice
+                    }
+                }
 
                 // recompute ui positions !
                 for ui_transform in iterate_over_component_mut!(components; UITransform) {
@@ -125,7 +129,10 @@ impl GlGameWindow {
     pub fn handle_gl_messages(&mut self, message: &GlWindowMessage) {
         match message {
             GlWindowMessage::SetCursorMode(mode) => self.window.set_cursor_mode(*mode),
-            GlWindowMessage::SetFullScreen(fullscreen) => println!("going full screen : {fullscreen}"),
+            GlWindowMessage::SetFullScreen(fullscreen) => match fullscreen {
+                FullScreenModes::Value(val) => println!("Going full screen : {val}"),
+                FullScreenModes::Toggle => println!("Toggling fullscreen !"),
+            },
         }
     }
 
