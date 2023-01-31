@@ -8,4 +8,13 @@ pub use modules::*;
 pub use cgmath::{
     Vector2,
     Vector3,
+    Euler,
+    Quaternion,
+    Matrix4,
+    Rad,
+};
+pub use glfw::{
+    WindowEvent,
+    Key,
+    Action,
 };

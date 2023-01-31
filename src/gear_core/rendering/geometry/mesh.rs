@@ -13,3 +13,8 @@ pub struct Mesh {
     pub triangles: Vec<u32>,
 }
 
+impl Mesh {
+    pub fn new(vertices: Vec<Vertex>, triangles: Vec<u32>) -> Mesh {
+        Mesh { vertices, triangles }
+    }
+}

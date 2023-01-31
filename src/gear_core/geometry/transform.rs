@@ -1,105 +1,96 @@
-use std::collections::VecDeque;
-use foundry::*;
-
+use cgmath::*;
 #[allow(dead_code)]
 pub struct Transform {
-    world_pos: cgmath::Matrix4<f32>,
-    local_pos: cgmath::Matrix4<f32>,
-    children: Vec<EntityRef>, // vec of indexes of childrens
-    parent: Option<EntityRef>, // None if it's a root object
+    position: Vector3<f32>,
+    rotation: Quaternion<f32>,
+    scale: Vector3<f32>,
+    world_pos: Matrix4<f32>,
 }
 
 impl Transform {
     pub fn origin() -> Transform {
         Transform { 
-            world_pos: cgmath::Matrix4::new(
-                1.0, 0.0, 0.0, 0.0, 
-                0.0, 1.0, 0.0, 0.0, 
-                0.0, 0.0, 1.0, 0.0, 
-                0.0, 0.0, 0.0, 1.0
-            ),
-            local_pos: cgmath::Matrix4::new(
-                1.0, 0.0, 0.0, 0.0, 
-                0.0, 1.0, 0.0, 0.0, 
-                0.0, 0.0, 1.0, 0.0, 
-                0.0, 0.0, 0.0, 1.0
-            ),
-            children: Vec::new(),
-            parent: None,
+            position: Vector3 { x: 0., y: 0., z: 0. },
+            rotation: Quaternion::from(Euler::new(Rad(0.), Rad(0.), Rad(0.))),
+            scale: Vector3 { x: 1., y: 1., z: 1. },
+            world_pos: Matrix4 { 
+                x: Vector4::new(1., 0., 0., 0.), 
+                y: Vector4::new(0., 1., 0., 0.), 
+                z: Vector4::new(0., 0., 1., 0.), 
+                w: Vector4::new(0., 0., 0., 1.) }, // none mean uncomputed yet
         }
     }
 
-    pub fn translated(mut self, tx: f32, ty: f32, tz: f32) -> Transform {
-        self.translate(tx, ty, tz);
+    pub fn translated(mut self, translation: Vector3<f32>) -> Transform {
+        self.translate(translation);
         self
     }
 
-    pub fn euler(mut self, rx: f32, ry: f32, rz: f32) -> Transform {
-        self.rotate_euler(rx, ry, rz);
+    pub fn rotated(mut self, rotation: Euler<Rad<f32>>) -> Transform {
+        self.rotate_euler(rotation);
         self
     }
 
-    #[allow(dead_code)]
-    pub fn translate(&mut self, tx: f32, ty: f32, tz: f32) {
-        self.local_pos = self.local_pos * cgmath::Matrix4::from_translation(cgmath::Vector3 { x: tx, y: ty, z: tz });
-        self.recompute_world_pos(None);
+    pub fn scaled(mut self, s: f32) -> Transform {
+        self.scale(s);
+        self
     }
 
-    #[allow(dead_code)]
-    pub fn rotate(&mut self, axis: cgmath::Vector3<f32>, angle: f32) {
-        self.local_pos = self.local_pos * cgmath::Matrix4::from_axis_angle(axis, cgmath::Rad(angle));
-        self.recompute_world_pos(None);
+    pub fn recompute_world_pos(&mut self) {
+        self.world_pos = Matrix4::from_translation(self.position) *
+            Matrix4::from_diagonal(Vector4::new(self.scale.x, self.scale.y, self.scale.z ,1.)) *
+            Matrix4::from(self.rotation);
     }
 
-    pub fn rotate_euler(&mut self, rx: f32, ry: f32, rz: f32) {
-        self.local_pos = self.local_pos * cgmath::Matrix4::from(cgmath::Quaternion::from(cgmath::Euler::new(cgmath::Rad(rx), cgmath::Rad(ry), cgmath::Rad(rz))));
-        self.recompute_world_pos(None);
+    pub fn translate(&mut self, translation: Vector3<f32>) {
+        self.position += translation;
+        self.recompute_world_pos();
     }
 
-    pub fn position(&self) -> cgmath::Vector3<f32> {
-        cgmath::Vector3 { x: self.world_pos.w.x, y: self.world_pos.w.y, z: self.world_pos.w.z }
+    pub fn set_position(&mut self, position: Vector3<f32>) {
+        self.position = position;
+        self.recompute_world_pos();
     }
 
-    #[allow(dead_code)]
-    pub fn world_pos(&self) -> cgmath::Matrix4<f32> {
+    pub fn scale(&mut self, s: f32) {
+        self.scale *= s;
+        self.recompute_world_pos();
+    }
+
+    pub fn rotate_euler(&mut self, rotation: Euler<Rad<f32>>) {
+        self.rotation = self.rotation * Quaternion::from(rotation);
+        self.recompute_world_pos();
+    }
+
+    pub fn rotate_around(&mut self, axis: Vector3<f32>, angle: Rad<f32>) {
+        self.rotation = self.rotation * Quaternion::from_axis_angle(axis, angle);
+        self.recompute_world_pos();
+    }
+
+    pub fn set_euler(&mut self, rotation: Euler<Rad<f32>>) {
+        self.rotation = Quaternion::from(rotation);
+        self.recompute_world_pos();
+    }
+
+    pub fn position(&self) -> Vector3<f32> {
+        self.position
+    }
+
+    pub fn rotation(&self) -> Quaternion<f32> {
+        self.rotation
+    }
+
+    pub fn euler(&self) -> Euler<Rad<f32>> {
+        Euler::from(self.rotation)
+    }
+
+    pub fn world_pos(&self) -> Matrix4<f32> {
         self.world_pos
     }
 
-    #[allow(dead_code)]
-    fn recompute_world_pos(&mut self, parent_world_pos: Option<cgmath::Matrix4<f32>>) {
-        self.world_pos = match parent_world_pos {Some(parent_tf) => self.local_pos * parent_tf, None => self.local_pos};
+    pub fn transform_direction(&self, direction: Vector3<f32>) -> Vector3<f32> {
+        self.rotation * direction
     }
 
-    #[allow(dead_code)]
-    #[allow(unreachable_code)]
-    fn update_world_pos(&mut self, _components: &mut ComponentTable, _parent: Option<cgmath::Matrix4<f32>>) {
-        unimplemented!("this is unusable");
-        self.world_pos = match _parent {Some(parent_tf) => self.local_pos * parent_tf, None => self.local_pos};
-        // unimplemented!("[GEAR ENGINE] -> Transform : not updating child movement");
-        // store all children to update in a deque : with their parents transform (better way to do this ? we are copying lots of 4x4 matrix)
-        let mut transforms: VecDeque<(EntityRef, cgmath::Matrix4<f32>)> = VecDeque::new();
-        for child in self.children.iter() {
-            transforms.push_back((*child, self.world_pos));
-        }
-        loop {
-            match transforms.pop_front() {
-                None => break, // no more elements
-                Some(current) => {
-                    match _components.get_component_mut::<Transform>(current.0) {
-                        Some(current_transform) => {
-                            // update this transform position
-                            current_transform.recompute_world_pos(Some(current.1));
-                            // add childrens to transforms to update
-                            for child in current_transform.children.iter() {
-                                transforms.push_back((*child, current_transform.world_pos()));
-                            }
-                        },
-                        None => {},
-                    }
-                }
-            }
-        }
-
-    }
 
 }
