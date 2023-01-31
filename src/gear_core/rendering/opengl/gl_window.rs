@@ -1,8 +1,8 @@
-use std::{any::Any, sync::mpsc::Receiver};
 use crate::gear_core::*;
 use foundry::*;
 use gl::Disable;
-use glfw::{Context, InitError, Window, WindowEvent, Glfw, WindowHint};
+use glfw::{Context, Glfw, InitError, Window, WindowEvent, WindowHint};
+use std::{any::Any, sync::mpsc::Receiver};
 
 pub struct GlGameWindow {
     glfw: Glfw,
@@ -20,31 +20,35 @@ pub enum GlWindowError {
 }
 
 impl GlGameWindow {
-    pub fn new(renderer: Option<Box<dyn Renderer>>) -> Result<GlGameWindow, GlWindowError>  {
+    pub fn new(
+        renderer: Option<Box<dyn Renderer>>,
+        dimensions: (i32, i32),
+    ) -> Result<GlGameWindow, GlWindowError> {
         // initialize glfw and the window
         let mut glfw = match glfw::init(glfw::FAIL_ON_ERRORS) {
             Ok(glfw) => glfw,
-            Err(e) => return Err(GlWindowError::GlfwInitError(e)) 
+            Err(e) => return Err(GlWindowError::GlfwInitError(e)),
         };
 
         // todo : change this to make it user friendly
-        let width = 900;
-        let height = 600;
+        let width = dimensions.0; // todo : A stocker quelque part
+        let height = dimensions.1;
         let title = "Gear Engine V0.1.0";
         let mode = glfw::WindowMode::Windowed;
         // Antialiasing x4
-        glfw.window_hint(WindowHint::Samples(Some(4)));
+        // todo aliasing ne fonctionne plus avec les textures glfw.window_hint(WindowHint::Samples(Some(4)));
 
-        let (mut window, events) = match glfw.create_window(width, height, title, mode) {
-            Some(result) => result,
-            None => return Err(GlWindowError::GlfwWindowCreationError),
-        };
+        let (mut window, events) =
+            match glfw.create_window(width as u32, height as u32, title, mode) {
+                Some(result) => result,
+                None => return Err(GlWindowError::GlfwWindowCreationError),
+            };
 
         window.make_current();
         // poll every thing for now
         // todo : better way to chose what to poll
         window.set_all_polling(true);
-        
+
         //window.set_cursor_mode(glfw::CursorMode::Hidden);
 
         gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
@@ -62,14 +66,14 @@ impl GlGameWindow {
             // enable depth tets
             gl::Enable(gl::DEPTH_TEST);
         }
-    
+
         return Ok(GlGameWindow {
             glfw,
             window,
             mouse_pos: (0., 0.),
             events,
             gl_renderer: renderer_system,
-        })
+        });
     }
 
     #[allow(dead_code)]
@@ -86,7 +90,12 @@ impl GlGameWindow {
         (w as f32) / (h as f32)
     }
 
-    pub fn default_event_handling(&self, components: &mut ComponentTable, event: glfw::WindowEvent, engine_message: &mut EngineMessage) {
+    pub fn default_event_handling(
+        &self,
+        components: &mut ComponentTable,
+        event: glfw::WindowEvent,
+        engine_message: &mut EngineMessage,
+    ) {
         match event {
             glfw::WindowEvent::Close => {
                 *engine_message = EngineMessage::StopEngine;
@@ -99,31 +108,29 @@ impl GlGameWindow {
                 // recompute ui positions !
                 for ui_transform in iterate_over_component_mut!(components; UITransform) {
                     ui_transform.recompute_screen_pos(width, height);
-                    unimplemented!(); // todo 
+                    unimplemented!(); // todo
                 }
-            } 
+            }
+
+            glfw::WindowEvent::Key(code, _, _, _) => {
+                if code == glfw::Key::Escape {
+                    *engine_message = EngineMessage::StopEngine;
+                }
+            }
 
             _ => {}
         }
     }
-
 }
-
-
-
-
 
 impl Updatable for GlGameWindow {
     fn update(&mut self, components: &mut ComponentTable, _delta: f32, user_data: &mut dyn Any) {
-        unsafe {
-            // clear the window
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
 
         // poll events
         // get the engine message from the user data
         match user_data.downcast_mut::<EngineMessage>() {
-            None => { // the user data was not an engine message : create a dummy callback to give to the event handler
+            None => {
+                // the user data was not an engine message : create a dummy callback to give to the event handler
                 let mut dummy_callback = EngineMessage::None;
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
@@ -135,8 +142,9 @@ impl Updatable for GlGameWindow {
                     self.mouse_pos = mouse_pos;
                     components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
                 }
-            },
-            Some(callback_message) => { // get the engine callback and pass it to the event handler
+            }
+            Some(callback_message) => {
+                // get the engine callback and pass it to the event handler
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), callback_message);
@@ -147,7 +155,7 @@ impl Updatable for GlGameWindow {
                     self.mouse_pos = mouse_pos;
                     components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
                 }
-            },
+            }
         };
 
         // render the ecs in our context
@@ -163,6 +171,5 @@ impl Updatable for GlGameWindow {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
-    } 
-
+    }
 }
