@@ -53,6 +53,7 @@ impl TexturePresets {
 pub struct Texture2D {
     id: u32,
     dimensions: (i32, i32),
+    presets: TexturePresets,
 }
 
 impl Texture2D {
@@ -69,54 +70,10 @@ impl Texture2D {
         let mut id = 0;
         unsafe {
             gl::GenTextures(1, &mut id);
-            gl::BindTexture(gl::TEXTURE_2D, id);
-            // set the texture wrapping/filtering options (on the currently bound texture object)
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, presets.wrap_t as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, presets.wrap_s as GLint);
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MIN_FILTER,
-                presets.min_filter as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MAG_FILTER,
-                presets.mag_filter as GLint,
-            );
-
-            match initial_value {
-                Some(buffer) => {
-                    gl::TexImage2D(
-                        gl::TEXTURE_2D,
-                        0,
-                        presets.internal_format as GLint,
-                        dimensions.0,
-                        dimensions.1,
-                        0,
-                        presets.format,
-                        gl::UNSIGNED_BYTE,
-                        buffer.as_raw().as_ptr() as *const c_void,
-                    );
-                }
-                None => {
-                    gl::TexImage2D(
-                        gl::TEXTURE_2D,
-                        0,
-                        presets.internal_format as GLint,
-                        dimensions.0,
-                        dimensions.1,
-                        0,
-                        presets.format,
-                        gl::UNSIGNED_BYTE,
-                        std::ptr::null(),
-                    );
-                }
-            }
-            gl::GenerateMipmap(gl::TEXTURE_2D);
-
-            gl::BindTexture(gl::TEXTURE_2D, 0)
         }
-        Self { id, dimensions }
+        let tex = Self { id, dimensions, presets };
+        tex.refresh(initial_value);
+        tex
     }
 
     pub fn load_from(file_name: &str) -> Self {
@@ -146,5 +103,65 @@ impl Texture2D {
 
     pub unsafe fn unbind(&self) {
         gl::BindTexture(gl::TEXTURE_2D, self.id);
+    }
+
+    pub fn resize(&mut self, dimensions: (i32, i32)) {
+        self.dimensions = dimensions;
+        self.refresh(None);
+    }
+
+    pub fn refresh(
+        &self,
+        initial_value: Option<RgbaImage>,
+    ) {
+        let mut id = 0;
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+            // set the texture wrapping/filtering options (on the currently bound texture object)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, self.presets.wrap_t as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, self.presets.wrap_s as GLint);
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MIN_FILTER,
+                self.presets.min_filter as GLint,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MAG_FILTER,
+                self.presets.mag_filter as GLint,
+            );
+
+            match initial_value {
+                Some(buffer) => {
+                    gl::TexImage2D(
+                        gl::TEXTURE_2D,
+                        0,
+                        self.presets.internal_format as GLint,
+                        self.dimensions.0,
+                        self.dimensions.1,
+                        0,
+                        self.presets.format,
+                        gl::UNSIGNED_BYTE,
+                        buffer.as_raw().as_ptr() as *const c_void,
+                    );
+                }
+                None => {
+                    gl::TexImage2D(
+                        gl::TEXTURE_2D,
+                        0,
+                        self.presets.internal_format as GLint,
+                        self.dimensions.0,
+                        self.dimensions.1,
+                        0,
+                        self.presets.format,
+                        gl::UNSIGNED_BYTE,
+                        std::ptr::null(),
+                    );
+                }
+            }
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+
+            gl::BindTexture(gl::TEXTURE_2D, 0)
+        }
     }
 }

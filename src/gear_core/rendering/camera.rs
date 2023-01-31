@@ -21,7 +21,7 @@ pub struct CameraComponent {
     znear: f32,
     zfar: f32,
     is_main: bool, // todo : autre manière de gérer ca mieux
-    dimensions: (i32, i32),
+    viewport_dimensions: (i32, i32),
     color_attachment: Texture2D,
     depth_attachment: Texture2D,
     framebuffer_id: GLuint,
@@ -31,7 +31,7 @@ impl CameraComponent {
     fn generate_framebuffer(&mut self) {
         self.framebuffer_id = 0;
         unsafe {
-            gl::Viewport(0, 0, self.dimensions.0, self.dimensions.1);
+            gl::Viewport(0, 0, self.viewport_dimensions.0, self.viewport_dimensions.1);
 
             gl::GenFramebuffers(1, &mut self.framebuffer_id);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer_id);
@@ -60,6 +60,12 @@ impl CameraComponent {
         }
     }
 
+    pub fn resize_viewport(&mut self, dimensions: (i32, i32)) {
+        self.viewport_dimensions = dimensions;
+        self.color_attachment.resize(dimensions);
+        self.depth_attachment.resize(dimensions);
+    }
+
     /// Create a new perspective camera from field of view, aspect ratio, znear and zfar
     pub fn new_perspective_camera(
         dimensions: (i32, i32),
@@ -79,7 +85,7 @@ impl CameraComponent {
             znear: znear,
             zfar: zfar,
             is_main: false,
-            dimensions,
+            viewport_dimensions: dimensions,
             color_attachment: Texture2D::new_from_presets(
                 dimensions,
                 TexturePresets::color_default(),
@@ -148,6 +154,11 @@ impl CameraComponent {
     }
 
     pub fn get_dimensions(&self) -> (i32, i32) {
-        self.dimensions
+        self.viewport_dimensions
+    }
+
+    pub fn resize(&mut self, dimensions: (i32, i32)) {
+        self.viewport_dimensions = dimensions;
+
     }
 }
