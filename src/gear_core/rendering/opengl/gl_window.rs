@@ -99,11 +99,17 @@ impl GlGameWindow {
                 // recompute ui positions !
                 for ui_transform in iterate_over_component_mut!(components; UITransform) {
                     ui_transform.recompute_screen_pos(width, height);
-                    unimplemented!(); // todo 
                 }
-            } 
+            }
 
             _ => {}
+        }
+    }
+
+    pub fn handle_gl_messages(&mut self, message: &GlWindowMessage) {
+        match message {
+            GlWindowMessage::SetCursorMode(mode) => self.window.set_cursor_mode(*mode),
+            GlWindowMessage::SetFullScreen(fullscreen) => println!("going full screen : {fullscreen}"),
         }
     }
 
@@ -128,24 +134,32 @@ impl Updatable for GlGameWindow {
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), &mut dummy_callback);
-                    components.send_event(EngineEvents::WindowEvent(event));
+                    components.send_event(EngineEvents::WindowEvent(event), &mut dummy_callback);
                 }
                 let mouse_pos = self.window.get_cursor_pos();
-                if mouse_pos != self.mouse_pos {
+                if mouse_pos != self.mouse_pos && self.window.is_focused() {
                     self.mouse_pos = mouse_pos;
-                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
+                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1), &mut dummy_callback);
+                }
+                match dummy_callback {
+                    EngineMessage::GlWindowMessage(message) => self.handle_gl_messages(&message),
+                    _ => {},
                 }
             },
             Some(callback_message) => { // get the engine callback and pass it to the event handler
                 self.glfw.poll_events();
                 for (_, event) in glfw::flush_messages(&self.events) {
                     self.default_event_handling(components, event.clone(), callback_message);
-                    components.send_event(EngineEvents::WindowEvent(event));
+                    components.send_event(EngineEvents::WindowEvent(event), callback_message);
                 }
                 let mouse_pos = self.window.get_cursor_pos();
-                if mouse_pos != self.mouse_pos {
+                if mouse_pos != self.mouse_pos && self.window.is_focused() {
                     self.mouse_pos = mouse_pos;
-                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1));
+                    components.send_event(EngineEvents::MousePosEvent(mouse_pos.0, mouse_pos.1), callback_message);
+                }
+                match callback_message {
+                    EngineMessage::GlWindowMessage(message) => self.handle_gl_messages(message),
+                    _ => {},
                 }
             },
         };

@@ -28,7 +28,7 @@ fn main() {
 
     // create an input event listener
     let mut input_listener = EventListener::new();
-    input_listener.listen(EngineEventTypes::WindowEvent, Box::new(|event, _, _| match event { EngineEvents::WindowEvent(e) => println!("{:?}", e), _ => {}}));
+    input_listener.listen(EngineEventTypes::WindowEvent, Box::new(|event, _, _, _| match event { EngineEvents::WindowEvent(e) => println!("{:?}", e), _ => {}}));
     let _listening_entity = create_entity!(&mut world.components; input_listener);
 
     // start main loop
