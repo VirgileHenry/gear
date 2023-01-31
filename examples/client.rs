@@ -35,8 +35,8 @@ fn main() {
 
     let mut camera_component = CameraComponent::new_perspective_camera(80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
-    let _camera = create_entity!(&mut world.components; Transform::origin().translated(0.0, 1.5, -5.0).euler(0.0, 3.1415, 0.0), camera_component);
-    let _sun = create_entity!(&mut world.components; Transform::origin().translated(-4.0, -4.0, -6.0), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
+    let _sun = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(-4.0, -4.0, -6.0)), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
 
 
     let mut client = Client::<NetworkMessages, MyClient>::new(client_handler, std::net::SocketAddr::V4(std::net::SocketAddrV4::new(std::net::Ipv4Addr::new(127, 0, 0, 1), 31415)));
@@ -82,7 +82,7 @@ impl ClientHandler<NetworkMessages> for MyClient {
 
         for (event_listener, transform, player) in iterate_over_component_mut!(components; PlayerController, Transform, Player) {
             if player.mine {
-                transform.translate(0.0, event_listener.input * 3.0 * delta, 0.0);
+                transform.translate(Vector3::new(0.0, event_listener.input * 3.0 * delta, 0.0));
             }
             if event_listener.input != 0.0 {
                 // tell the server we moved
@@ -100,8 +100,8 @@ impl ClientHandler<NetworkMessages> for MyClient {
         match message {
             NetworkMessages::SpawnPlayer(player_id, mine, position) => {
                 let new_player = create_entity!(components; Player{id: player_id, mine: mine, position: position},
-                    Transform::origin().translated(player_id as f32 - 3.0, position, 0.0),
-                    MeshRenderer::new(MeshType::Owned(Mesh::sphere(0.3, 25)),  Material::from_ref(self.player_shader, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
+                    Transform::origin().translated(Vector3::new(player_id as f32 - 3.0, position, 0.0)),
+                    MeshRenderer::new(Mesh::sphere(0.3, 25),  Material::from_ref(self.player_shader, Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
                 if mine {
                     components.add_component(new_player, PlayerController{input: 0.0});
                 }
@@ -124,7 +124,7 @@ impl ClientHandler<NetworkMessages> for MyClient {
                 // find the said player
                 for (player, transform) in iterate_over_component_mut!(components; Player, Transform) {
                     if player.id == player_id {
-                        transform.translate(0.0, position - transform.position().y, 0.0)
+                        transform.translate(Vector3::new(0.0, position - transform.position().y, 0.0))
                     }
                 }
             }
