@@ -2,6 +2,7 @@ use crate::gear_core::*;
 use foundry::*;
 use glfw::{Context, Glfw, InitError, Window, WindowEvent, WindowHint};
 use std::{any::Any, sync::mpsc::Receiver};
+use glfw::ffi::glfwSetWindowSizeCallback;
 
 pub struct GlGameWindow {
     glfw: Glfw,
