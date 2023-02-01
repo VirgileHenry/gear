@@ -177,10 +177,27 @@ impl ShaderProgram {
             let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
             if loc != -1 {
                 gl::Uniform1f(
-                    loc, 
+                    loc,
                     val,
                 )
-            }            
+            }
+        }
+    }
+
+    /// Set a int uniform.
+    /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
+    pub fn set_int(&self, name: &str, val: i32) {
+        unsafe {
+            let c_name = CString::new(name)
+                .unwrap()
+                .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::Uniform1i(
+                    loc,
+                    val,
+                )
+            }
         }
     }
 

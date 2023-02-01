@@ -63,6 +63,7 @@ impl Renderer for DefaultOpenGlRenderer {
                     camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
                     self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos()); // todo brice : meme pas besoin
+                    self.copy_shader.set_int("tex", 0);
                     self.render_quad.bind();
                     self.render_quad.draw();
                 }
