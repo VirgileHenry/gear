@@ -1,7 +1,7 @@
 mod ui_transform;
 mod ui_event_listener;
 mod button;
-mod text;
+mod ui_renderer;
 
 
 pub use ui_transform::{
@@ -13,4 +13,4 @@ pub use button::{
     Button,
     ButtonState,
 };
-pub use text::Text;
+pub use ui_renderer::UIRenderer;

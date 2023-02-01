@@ -22,8 +22,8 @@ fn main() {
     let mesh2 = Mesh::cube(2.0);
     let material = Material::from_program("defaultProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
     let material2 = Material::from_program("defaultProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
-    let mesh_renderer = MeshRenderer::new(mesh, material);
-    let mesh_renderer2 = MeshRenderer::new(mesh2, material2);
+    let mesh_renderer = MeshRenderer::new(&mesh, material);
+    let mesh_renderer2 = MeshRenderer::new(&mesh2, material2);
 
 
 
@@ -59,7 +59,9 @@ fn main() {
     button.on_enter = Some(Box::new(|_, _, entering, _| {
         println!("button got entered : {}", entering);
     }));
-    // let button = create_entity!(&mut world.components; tf, button);
+    let mut tf = UITransform::origin().at(Vector2::new(100., 100.)).relative_sized(Vector2::new(0.2, 0.2)).anchored(UIAnchorPoints::TopLeft);
+    tf.recompute_screen_pos(window_size.0, window_size.1);
+    let button = create_entity!(&mut world.components; tf, button);
 
     world.register_system(system, 10);
     // start main loop

@@ -17,7 +17,7 @@ impl MeshLibrary {
     }
 
     pub fn add(&mut self, file_path: &str, mesh_name: String) -> Result<(), MeshLoadingError> {
-        self.library.insert(mesh_name, Rc::new(MeshRenderingBuffers::from(load_static_mesh(file_path)?.into())));
+        self.library.insert(mesh_name, Rc::new(MeshRenderingBuffers::from(&load_static_mesh(file_path)?.into())));
         Ok(())
     }
 

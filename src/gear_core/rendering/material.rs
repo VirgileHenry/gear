@@ -11,10 +11,10 @@ use crate::material::texture::Texture2D;
 pub struct Material {
     /// shader program to use
     shader_program: String,
-    // needs params depending on the program. Generics ?
+    // needs params depending on the program.
     properties: Box<dyn MaterialProperties>,
     // textures id
-    textures: Vec<Texture2D>,
+    textures: Vec<Texture2D>, // todo brice : ça dégage dans les mat prop ça
 }
 
 impl Material {

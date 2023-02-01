@@ -1,4 +1,4 @@
-use crate::gear_core::{
+use crate::{gear_core::{
     geometry::transform::Transform,
     rendering::{
         camera::CameraComponent,
@@ -6,7 +6,7 @@ use crate::gear_core::{
         lighting::light::MainLight,
         shaders::{Shader, ShaderProgram, ShaderProgramRef},
     },
-};
+}, MeshRenderingBuffers, Vertex};
 use crate::{COPY_FRAG_SHADER, Material, Mesh, NoParamMaterialProperties, UI_DEFAULT_FRAG_SHADER, UI_DEFAULT_VERT_SHADER, UI_UNLIT_UV_FRAG_SHADER};
 use cgmath::{SquareMatrix, Vector3};
 use foundry::*;
@@ -21,7 +21,7 @@ pub struct DefaultOpenGlRenderer {
     shader_programs: HashMap<String, ShaderProgram>,
     missing_shader_program: ShaderProgram,
 
-    render_quad: MeshRenderer,
+    render_quad: MeshRenderingBuffers,
     copy_shader: ShaderProgram,
 }
 
@@ -31,8 +31,7 @@ impl DefaultOpenGlRenderer {
         let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, UI_DEFAULT_VERT_SHADER)
             .expect("Error while generating UI shader");
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
-        let material = Material::from_program("copy_shader", Box::new(NoParamMaterialProperties{}));
-        let mesh_renderer = MeshRenderer::new(mesh, material);
+        let mesh_renderer = MeshRenderingBuffers::from(&mesh);
 
         use super::shaders::shaders_files::{MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER};
         DefaultOpenGlRenderer {
@@ -53,7 +52,7 @@ impl Renderer for DefaultOpenGlRenderer {
 
     fn render(&self, components: &mut ComponentTable) {
 
-        self.render_camera_buffers(components);
+        self.render_scene(components);
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
             if camera.is_main() {
                 unsafe {
@@ -63,8 +62,9 @@ impl Renderer for DefaultOpenGlRenderer {
                     gl::ActiveTexture(gl::TEXTURE0);
                     camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
-                    self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos());
-                    self.render_quad.draw(&self.copy_shader);
+                    self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos()); // todo brice : meme pas besoin
+                    self.render_quad.bind();
+                    self.render_quad.draw();
                 }
             }
         }
@@ -74,7 +74,7 @@ impl Renderer for DefaultOpenGlRenderer {
 }
 
 impl DefaultOpenGlRenderer {
-    fn render_camera_buffers(&self, components: &mut ComponentTable) {
+    fn render_scene(&self, components: &mut ComponentTable) {
         // found main camera
 
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
@@ -139,9 +139,26 @@ impl DefaultOpenGlRenderer {
             break; // render only once in case there are multiple main camera component (and avoid useless shooting)
         }
 
-        // todo render UI !
+
+    }
+
+    fn render_ui(&self, components: &mut ComponentTable) {
+
+        let buffer = MeshRenderingBuffers::from(&Mesh::new(
+            vec![
+                Vertex::new(0., 0., 0., 0., 0., 1., 0., 0.),
+                Vertex::new(1., 0., 0., 0., 0., 1., 0., 0.),
+                Vertex::new(1., 1., 0., 0., 0., 1., 0., 0.),
+                Vertex::new(0., 1., 0., 0., 0., 1., 0., 0.),
+            ],
+            vec![
+                0, 1, 2,
+                2, 3, 0,
+            ]
+        ));
 
 
+        
     }
 }
 
