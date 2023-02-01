@@ -48,6 +48,17 @@ impl TexturePresets {
             format: gl::DEPTH_COMPONENT,
         }
     }
+
+    pub fn pipeline_default() -> Self {
+        Self {
+            wrap_s: gl::CLAMP_TO_EDGE,
+            wrap_t: gl::CLAMP_TO_EDGE,
+            min_filter: gl::NEAREST,
+            mag_filter: gl::NEAREST,
+            internal_format: gl::RGBA,
+            format: gl::RGBA,
+        }
+    }
 }
 
 pub struct Texture2D {
@@ -165,3 +176,5 @@ impl Texture2D {
         }
     }
 }
+
+pub mod pipeline;
