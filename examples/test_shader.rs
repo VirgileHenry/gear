@@ -31,7 +31,7 @@ fn main() {
 
     let material = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
     let mut material2 = Material::from_program("unlitTextureProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
-    material2.attach_texture("minecraft_dirt.png");
+    material2.attach_texture(Texture2D::load_from("minecraft_dirt.png"));
 
     let mesh_renderer = MeshRenderer::new(mesh, material);
     let mesh_renderer2 = MeshRenderer::new(mesh2, material2);

@@ -4,6 +4,7 @@ use std::ffi::c_void;
 use gl::types::{GLenum, GLint};
 use image::RgbaImage;
 
+#[derive(Copy, Clone)]
 pub struct TexturePresets {
     pub wrap_s: GLenum,
     pub wrap_t: GLenum,
@@ -61,6 +62,7 @@ impl TexturePresets {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Texture2D {
     id: u32,
     dimensions: (i32, i32),
@@ -178,3 +180,5 @@ impl Texture2D {
 }
 
 pub mod pipeline;
+
+pub use pipeline::*;

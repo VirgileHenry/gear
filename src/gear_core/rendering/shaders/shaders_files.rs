@@ -19,3 +19,7 @@ pub static COPY_FRAG_SHADER: &str = include_str!("core/ui/copy.frag.glsl");
 
 // Vertex
 pub static UI_DEFAULT_VERT_SHADER: &str = include_str!("core/ui/default.vert.glsl");
+
+
+/* PIPELINE */
+pub static PIPELINE_DEFAULT_VERT: &str = include_str!("core/pipeline/default.vert.glsl");
