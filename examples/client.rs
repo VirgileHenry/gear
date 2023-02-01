@@ -5,9 +5,12 @@ use cgmath::Vector3;
 use gear_macros_derive::{NetworkSerializable};
 
 fn main() {
+    let window_size = (1200, 800);
+
+
     // create the engine with the window
     let mut engine = Engine::new() // creates the engine
-        .with_gl_window(None); // with a window
+        .with_gl_window(None, window_size); // with a window
 
     // create a renderer and give shaders to it
     let mut renderer = DefaultOpenGlRenderer::new();
@@ -33,7 +36,7 @@ fn main() {
     // create cube and camera entity
     let world = engine.get_world();
 
-    let mut camera_component = CameraComponent::new_perspective_camera(80.0, aspect_ratio, 0.1, 100.0);
+    let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
     let _sun = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(-4.0, -4.0, -6.0)), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
@@ -99,7 +102,7 @@ impl ClientHandler<NetworkMessages> for MyClient {
             NetworkMessages::SpawnPlayer(player_id, mine, position) => {
                 let new_player = create_entity!(components; Player{id: player_id, mine: mine, position: position},
                     Transform::origin().translated(Vector3::new(player_id as f32 - 3.0, position, 0.0)),
-                    MeshRenderer::new(Mesh::sphere(0.3, 25),  Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
+                    MeshRenderer::new(&Mesh::sphere(0.3, 25),  Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}))));
                 if mine {
                     components.add_component(new_player, PlayerController{input: 0.0});
                 }

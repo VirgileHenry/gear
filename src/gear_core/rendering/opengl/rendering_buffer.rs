@@ -5,14 +5,15 @@ pub struct MeshRenderingBuffers {
     vao: VertexArray, // holds rendering parameter data and pointer to vbo + ebo
     vbo: BufferObject, // holds vertex data
     ebo: BufferObject, // holds index data
+    tri_count: usize, // number of triangles in mesh
 }
 
 impl MeshRenderingBuffers {
-    pub fn new(vao: VertexArray, vbo: BufferObject, ebo: BufferObject) -> MeshRenderingBuffers {
-        MeshRenderingBuffers { vao, vbo, ebo }
+    pub fn new(vao: VertexArray, vbo: BufferObject, ebo: BufferObject, tri_count: usize) -> MeshRenderingBuffers {
+        MeshRenderingBuffers { vao, vbo, ebo, tri_count }
     }
 
-    pub fn from(mesh: Mesh) -> MeshRenderingBuffers {
+    pub fn from(mesh: &Mesh) -> MeshRenderingBuffers {
         // create and bind the vao
         let vao = VertexArray::new();
         vao.bind();
@@ -31,10 +32,19 @@ impl MeshRenderingBuffers {
         ebo.unbind();
         vbo.unbind();
 
-        MeshRenderingBuffers::new(vao, vbo, ebo)
+        MeshRenderingBuffers::new(vao, vbo, ebo, mesh.triangles.len())
     }
 
-    pub fn vao(&self) -> &VertexArray {
-        &self.vao
+    pub fn bind(&self) {
+        self.vao.bind()
+    }
+
+    pub unsafe fn draw(&self) {
+        gl::DrawElements(
+            gl::TRIANGLES, // mode
+            self.tri_count as i32, // starting index in the enabled arrays
+            gl::UNSIGNED_INT,
+            0 as *const std::ffi::c_void, // number of indices to be rendered
+        );
     }
 }

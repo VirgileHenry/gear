@@ -113,7 +113,7 @@ impl ShaderPipelineNode {
     pub unsafe fn compute(&self, input_textures: &Vec<Texture2D>) {
         let plane_mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let material = Material::from_program("copy_shader", Box::new(NoParamMaterialProperties{})); // todo Brice: ne pas utiliser ca
-        let mesh_renderer = MeshRenderer::new(plane_mesh, material);
+        let mesh_renderer = MeshRenderer::new(&plane_mesh, material);
         self.compute_rec_with_plane(input_textures, &mesh_renderer);
     }
 

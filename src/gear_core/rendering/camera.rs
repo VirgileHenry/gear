@@ -1,6 +1,5 @@
 use crate::gear_core::material::texture::TexturePresets;
 use crate::material::texture::Texture2D;
-use crate::Text;
 use foundry::*;
 use gl::types::{GLint, GLsizei, GLuint};
 
