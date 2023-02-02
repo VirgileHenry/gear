@@ -6,6 +6,7 @@ use gl::DeleteTextures;
 use super::shaders::{ShaderProgramRef, ShaderProgram};
 use crate::gear_core::rendering::opengl::color::Color;
 use crate::material::texture::Texture2D;
+use crate::Text;
 
 
 pub struct Material {
@@ -26,8 +27,8 @@ impl Material {
         }
     }
 
-    pub fn attach_texture(&mut self, file_name: &str) {
-        self.textures.push(Texture2D::load_from(file_name));
+    pub fn attach_texture(&mut self, texture: Texture2D) {
+        self.textures.push(texture);
     }
 
     #[inline]

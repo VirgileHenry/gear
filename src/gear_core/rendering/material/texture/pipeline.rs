@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::iter::Map;
+use std::os::unix::fs::FileTypeExt;
 use cgmath::{Matrix4, Vector3};
 use gl::types::GLuint;
 use crate::gear_core::material::texture::{Texture2D, TexturePresets};
@@ -54,14 +55,14 @@ impl ShaderPipelineNodeParam {
 }
 
 // Shader Pipeline node
-struct ShaderPipelineNode {
+pub struct ShaderPipelineNode {
     // A node has either an input texture OR a non empty list of input nodes
     input_texture: Option<Texture2D>,
     input_nodes: Vec<ShaderPipelineNode>,
 
     texture: Texture2D,
     shader: ShaderProgram,
-    param: ShaderPipelineNodeParam,
+    param: Option<ShaderPipelineNodeParam>,
 
     framebuffer_id: GLuint,
 }
@@ -71,7 +72,7 @@ impl ShaderPipelineNode {
     pub fn new(dimensions: (i32, i32),
                input_nodes: Vec<ShaderPipelineNode>,
                shader: ShaderProgram,
-               param: ShaderPipelineNodeParam) -> Self {
+               param: Option<ShaderPipelineNodeParam>) -> Self {
 
         let texture = Texture2D::new_from_presets(dimensions, TexturePresets::pipeline_default(), None);
 
@@ -139,7 +140,11 @@ impl ShaderPipelineNode {
 
         // Setting shader parameters
         self.shader.set_used();
-        self.param.bind_all_params(&self.shader);
+        match &self.param {
+            Some(param) => param.bind_all_params(&self.shader),
+            _ => (),
+        }
+
 
         // Drawing result onto node's texture
         plane.draw(&self.shader);
@@ -153,7 +158,7 @@ impl ShaderPipelineNode {
     }
 
 
-    pub fn get_texture(&self) -> &Texture2D {
-        &self.texture
+    pub fn get_texture(&self) -> Texture2D {
+        self.texture.clone()
     }
 }

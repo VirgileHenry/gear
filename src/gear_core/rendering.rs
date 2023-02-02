@@ -21,6 +21,7 @@ pub use renderer::{
 pub use material::{
     Material,
     material_presets::*,
+    texture::*,
 };
 
 pub use geometry::*;
