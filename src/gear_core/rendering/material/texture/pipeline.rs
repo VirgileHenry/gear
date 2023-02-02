@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::iter::Map;
-use std::os::unix::fs::FileTypeExt;
 use cgmath::{Matrix4, Vector3};
 use gl::types::GLuint;
 use crate::gear_core::material::texture::{Texture2D, TexturePresets};
@@ -54,9 +52,19 @@ impl ShaderPipelineNodeParam {
 
 }
 
+
+/*
+ça serait pas plus propre ? ça parait plus "rust" et moins "C", et ça force ta condition
+En rust on aime bien que si ya des cas impossible, ils soient juste pas représentables
+pub enum ShaderPipelineInput {
+    Texture(Texture2D),
+    Nodes(Vec<ShaderPipelineNode>),
+} 
+*/
+
 // Shader Pipeline node
 pub struct ShaderPipelineNode {
-    // A node has either an input texture OR a non empty list of input nodes
+    // A node has either an input texture OR a non empty list of input nodes // todo brice : regarde au dessus 
     input_texture: Option<Texture2D>,
     input_nodes: Vec<ShaderPipelineNode>,
 
