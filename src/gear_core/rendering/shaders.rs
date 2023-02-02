@@ -167,6 +167,25 @@ impl ShaderProgram {
         }
     }
 
+    /// Set a matrix3 uniform.
+    /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
+    pub fn set_mat3(&self, name: &str, val: cgmath::Matrix3<f32>) {
+        unsafe {
+            let c_name = CString::new(name)
+            .unwrap()
+            .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::UniformMatrix3fv(
+                    loc,
+                    1, 
+                    gl::FALSE, 
+                    &val[0][0] as *const f32,
+                )
+            }
+        }
+    }
+
     /// Set a float uniform.
     /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
     pub fn set_float(&self, name: &str, val: f32) {

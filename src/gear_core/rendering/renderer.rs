@@ -4,14 +4,18 @@ use crate::{gear_core::{
         camera::CameraComponent,
         geometry::mesh_renderer::MeshRenderer,
         lighting::light::MainLight,
-        shaders::{Shader, ShaderProgram, ShaderProgramRef},
+        shaders::{ShaderProgram},
     },
-}, MeshRenderingBuffers, Vertex};
-use crate::{COPY_FRAG_SHADER, Material, Mesh, NoParamMaterialProperties, UI_DEFAULT_FRAG_SHADER, UI_DEFAULT_VERT_SHADER, UI_UNLIT_UV_FRAG_SHADER};
+    ui::{
+        UITransform,
+        UIRenderer
+    },
+}, MeshRenderingBuffers};
+use crate::{COPY_FRAG_SHADER, Mesh, COPY_VERT_SHADER};
 use cgmath::{SquareMatrix, Vector3};
 use foundry::*;
 use gl::types::*;
-use std::collections::HashMap;
+use std::collections::{HashMap};
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -23,13 +27,14 @@ pub struct DefaultOpenGlRenderer {
 
     render_quad: MeshRenderingBuffers,
     copy_shader: ShaderProgram,
+    ui_quad: MeshRenderingBuffers,
 }
 
 impl DefaultOpenGlRenderer {
     pub fn new() -> DefaultOpenGlRenderer {
 
-        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, UI_DEFAULT_VERT_SHADER)
-            .expect("Error while generating UI shader");
+        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, COPY_VERT_SHADER)
+            .expect("Error while generating internal (copy) shader");
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let mesh_renderer = MeshRenderingBuffers::from(&mesh);
 
@@ -40,6 +45,7 @@ impl DefaultOpenGlRenderer {
                 .expect("[GEAR ENGINE] -> [RENDERER] -> Unable to compile default shaders : "),
             render_quad: mesh_renderer,
             copy_shader,
+            ui_quad: MeshRenderingBuffers::ui_quad_buffer(),
         }
     }
 
@@ -69,7 +75,9 @@ impl Renderer for DefaultOpenGlRenderer {
                 }
             }
         }
+        self.render_ui(components); // todo : better way, with new textures etc
 
+        
     }
 
 }
@@ -145,19 +153,40 @@ impl DefaultOpenGlRenderer {
 
     fn render_ui(&self, components: &mut ComponentTable) {
 
-        let buffer = MeshRenderingBuffers::from(&Mesh::new(
-            vec![
-                Vertex::new(0., 0., 0., 0., 0., 1., 0., 0.),
-                Vertex::new(1., 0., 0., 0., 0., 1., 0., 0.),
-                Vertex::new(1., 1., 0., 0., 0., 1., 0., 0.),
-                Vertex::new(0., 1., 0., 0., 0., 1., 0., 0.),
-            ],
-            vec![
-                0, 1, 2,
-                2, 3, 0,
-            ]
-        ));
+        let mut rendering_map: HashMap<&str, Vec<(&UITransform, &UIRenderer)>> = HashMap::new();
 
+        for (ui_transform, ui_renderer) in iterate_over_component!(&components; UITransform, UIRenderer) {
+            match rendering_map.get_mut(&ui_renderer.material_name()) {
+                Some(vec) => vec.push((ui_transform, ui_renderer)),
+                None => {rendering_map.insert(ui_renderer.material_name(), vec![(ui_transform, ui_renderer)]);},
+            }
+        }
+
+        // bind ui quad vao
+        self.ui_quad.bind();
+
+        for (id, vec) in rendering_map.into_iter() {
+            // switch to render program
+            let current_program = match self.shader_programs.get(id) {
+                Some(shader_program) => shader_program,
+                None => &self.missing_shader_program,
+            };
+            current_program.set_used();
+            for (transform, renderer) in vec.into_iter() {
+                // set model uniform
+                match transform.screen_pos() {
+                    Some(matrix) => {
+                        current_program.set_mat3("modelMat", matrix);
+                        unsafe {
+                            renderer.set_mat_to_shader(&current_program);
+                            self.ui_quad.draw();
+                        }
+                    }
+                    None => {}
+                }
+
+            }
+        }
 
         
     }

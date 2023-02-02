@@ -28,6 +28,7 @@ pub struct UITransform {
     relative_size: Vector2<f32>,
     anchor_point: UIAnchorPoints,
     rotation: Rad<f32>,
+    depth: i32,
     screen_pos: Option<Matrix3<f32>>,
     inverted_screen_pos: Option<Matrix3<f32>>,
 }
@@ -39,7 +40,8 @@ impl UITransform {
         size: Vector2<f32>,
         relative_size: Vector2<f32>,
         anchor_point: UIAnchorPoints,
-        rotation: Rad<f32>) -> UITransform {
+        rotation: Rad<f32>,
+        depth: i32) -> UITransform {
         UITransform {
             position,
             relative_pos,
@@ -47,6 +49,7 @@ impl UITransform {
             relative_size,
             anchor_point,
             rotation,
+            depth,
             screen_pos: None,
             inverted_screen_pos: None,
         }
@@ -60,6 +63,7 @@ impl UITransform {
             relative_size: Vector2::new(0., 0.),
             anchor_point: UIAnchorPoints::Center,
             rotation: Rad(0.),
+            depth: 1, // one, so child are in front of their parents
             screen_pos: None,
             inverted_screen_pos: None,
         }
@@ -77,6 +81,11 @@ impl UITransform {
 
     pub fn relative_at(mut self, position: Vector2<f32>) -> UITransform {
         self.relative_pos = position;
+        self
+    }
+
+    pub fn at_depth(mut self, depth: i32) -> UITransform {
+        self.depth = depth;
         self
     }
 
@@ -135,6 +144,11 @@ impl UITransform {
 
     pub fn inverted_screen_pos(&self) -> Option<Matrix3<f32>> {
         self.inverted_screen_pos
+    }
+
+    pub fn depth(&self) -> i32 {
+        // todo : add parent
+        self.depth
     }
 
     pub fn contains_point(&mut self, point: Vector2<f64>) -> bool {

@@ -1,4 +1,4 @@
-use crate::{buffers::{VertexArray, BufferObject}, Mesh, Vertex};
+use crate::{buffers::{VertexArray, BufferObject}, Mesh, Vertex, ui_vertex::UIVertex};
 
 #[allow(unused)] // technically we are not using vbo and ebo, but keep them alive do avoid dropping them
 pub struct MeshRenderingBuffers {
@@ -46,5 +46,39 @@ impl MeshRenderingBuffers {
             gl::UNSIGNED_INT,
             0 as *const std::ffi::c_void, // number of indices to be rendered
         );
+    }
+
+    pub fn ui_quad_buffer() -> MeshRenderingBuffers {
+
+        let vertices = vec![
+            UIVertex::new(0., 0., 0., 0., 1),
+            UIVertex::new(1., 0., 0., 0., 1),
+            UIVertex::new(1., 1., 0., 0., 1),
+            UIVertex::new(0., 1., 0., 0., 1),
+        ];
+        let triangles = vec![
+            0, 1, 2,
+            2, 3, 0,
+        ];
+
+        // create and bind the vao
+        let vao = VertexArray::new();
+        vao.bind();
+        // create the vbo, bind it, upload data to it and give the vertex the attrib pointers
+        let vbo = BufferObject::new(gl::ARRAY_BUFFER);
+        vbo.bind();
+        vbo.upload_data(&vertices, gl::STATIC_DRAW);
+        UIVertex::vertex_attrib_pointer();
+        // create the ebo, bind it, upload data to it
+        let ebo = BufferObject::new(gl::ELEMENT_ARRAY_BUFFER);
+        ebo.bind();
+        ebo.upload_data(&triangles, gl::STATIC_DRAW);
+        // unbind the vao first, otherwise we will unbind the vbo and ebo from the vao
+        vao.unbind();
+        // ubind vbo and ebo
+        ebo.unbind();
+        vbo.unbind();
+
+        MeshRenderingBuffers::new(vao, vbo, ebo, triangles.len())
     }
 }
