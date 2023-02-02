@@ -28,7 +28,7 @@ fn main() {
         node.compute(&a);
         material.attach_texture(node.get_texture());
     }
-    let mesh_renderer = MeshRenderer::new(mesh, material);
+    let mesh_renderer = MeshRenderer::new(&mesh, material);
 
 
     // assign the renderer to the window
