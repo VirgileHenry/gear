@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform sampler2D tex;
+uniform float time;
 
 in VS_OUTPUT {
     vec2 UV;
@@ -75,9 +76,9 @@ float fractal(vec3 pos) {
     float val = 0.;
     float pers = .5;
     float amp = 1.;
-    float lac = 1.3;
+    float lac = 1.5;
     float freq = 1.;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 16; i++) {
         val += perlin(pos*freq)*amp;
         amp*=pers;
         freq*=lac;
@@ -122,17 +123,6 @@ vec3 colormap2(float val) {
 }
 
 void main() {
-    //float val = ridges(vec3(uv+camera.xy, time/5.)*(1.+camera.x), 256.);
-
-    //float val = ridges(vec3(uv+camera.xy, time/5.)*(8.+camera.x), 10.);
-
-    //float val = ridges(vec3(uv+camera.xy + .1*vec2(.4, .7)*ridges(vec3(uv+camera.xy + .1*vec2(-.6, .3)*ridges(vec3(uv+camera.xy, time/5.)*(8.+camera.x), 10.), time/5.)*(8.+camera.x), 10.), time/5.)*(8.+camera.x), 10.);
-
-    //float val = perlin(vec3(uv + .1*vec2(.4, .7)*perlin(vec3(uv + .1*vec2(-.6, .3)*perlin(vec3(uv, time/5.)*8.), time/5.)*8.), time/5.)*8.);
-    float val = perlin(vec3(IN.UV*5., 1.));
-
-    //float val = turb(vec3(IN.UV));
-    //val += (1.-val)*.6*turb(vec3(uv+camera.xy+vec2(0., .30), time/10.)*(200.+camera.x));
-
-    FragColor = vec4(colormap2(val)/1.3, 1.);
+    float val = (fractal(vec3(IN.UV*10., time))+1.)*.5;
+    FragColor = vec4(vec3(val), 1.);
 }

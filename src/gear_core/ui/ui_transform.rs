@@ -111,8 +111,10 @@ impl UITransform {
         let size = Matrix3::<f32>::from_nonuniform_scale(self.size.x + self.relative_size.x * width as f32, self.size.y + self.relative_size.y * height as f32);
         // rotation
         let rotation = Matrix3::<f32>::from_angle_z(self.rotation);
+        // go from (0, 0, width, height) to (-1, -1, 1, 1)
+        let screen_to_gl_matrix = Matrix3::from_translation(Vector2::new(-1., -1.)) * Matrix3::from_nonuniform_scale(width as f32 / 2., height as f32 / 2.);
         // do all ops in order, right to left
-        let screen_pos = translation * rotation * size * Self::anchor_matrix(&self.anchor_point);
+        let screen_pos = screen_to_gl_matrix * translation * rotation * size * Self::anchor_matrix(&self.anchor_point);
         self.screen_pos = Some(screen_pos);
         self.inverted_screen_pos = match screen_pos.invert() {
             Some(inverted) => Some(inverted),

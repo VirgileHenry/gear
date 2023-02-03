@@ -1,4 +1,5 @@
 use gl::TEXTURE_2D;
+use glfw::ffi::glfwGetTime;
 use Gear::*;
 
 fn main() {
@@ -20,16 +21,18 @@ fn main() {
     // create a mesh renderer from the shader program
     let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
 
-    let node = create();
+    let mut node = create();
+
 
     let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
     unsafe {
-        let a = vec![];
-        node.compute(&a);
         material.attach_texture(node.get_texture());
     }
-    let mesh_renderer = MeshRenderer::new(&mesh, material);
+    let timer = TimingSystem{timer:0.0, node};
+    let system = System::new(Box::new(timer), UpdateFrequency::PerFrame);
 
+
+    let mesh_renderer = MeshRenderer::new(&mesh, material);
 
     // assign the renderer to the window
     let mut aspect_ratio = 1.0;
@@ -47,9 +50,11 @@ fn main() {
     let _plane = create_entity!(&mut world.components; Transform::origin(), mesh_renderer);
     let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
-    let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 0.0, 1.3)), camera_component);
+    let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, -0.2, 1.0)), camera_component);
 
     // start main loop
+    world.register_system(system, 10);
+
     engine.main_loop();
 
 }
@@ -58,12 +63,35 @@ fn main() {
 pub fn create() -> ShaderPipelineNode {
     pub static PERLIN_FRAG: &str = include_str!("test_pipeline/perlin.frag.glsl");
     let perlin_shader = ShaderProgram::simple_program(PERLIN_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    let perlin_node = ShaderPipelineNode::new((1000, 1000), vec![], perlin_shader, None);
-
+    let mut perlin_node = ShaderPipelineNode::new((1000, 1000), perlin_shader);
 
     //pub static GRAYSCALE_FRAG: &str = include_str!("test_pipeline/gray_scale.frag.glsl");
     //let gray_shader = ShaderProgram::simple_program(GRAYSCALE_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    //let gray_node = ShaderPipelineNode::new((1000, 1000), vec![perlin_node], gray_shader, None);
+    //let gray_node = ShaderPipelineNode::new((1000, 1000), vec![perlin_node], gray_shader);
 
     perlin_node
+}
+
+
+struct TimingSystem {
+    timer: f32,
+    node: ShaderPipelineNode
+}
+
+impl Updatable for TimingSystem {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
+        self.timer += delta;
+        self.node.set_float("time", self.timer);
+        unsafe {
+            self.node.compute();
+        }
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
 }

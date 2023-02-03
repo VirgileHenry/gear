@@ -13,8 +13,8 @@ out VS_OUTPUT {
 
 void main()
 {
-    vec3 position = vec3((modelMat * vec3(inPos, 1.0)).xy, inDepth);
+    vec3 position = vec3(inPos, 1.0);
     gl_Position = vec4(position, 1.0);
-    OUT.Position = vec3(modelMat * vec3(inPos, 1.0));
+    OUT.Position = position;
     OUT.UV = inUv;
 }

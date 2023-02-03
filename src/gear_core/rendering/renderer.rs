@@ -12,7 +12,7 @@ use crate::{gear_core::{
     },
 }, MeshRenderingBuffers};
 use crate::{COPY_FRAG_SHADER, Mesh, COPY_VERT_SHADER};
-use cgmath::{SquareMatrix, Vector3};
+use cgmath::{SquareMatrix, Vector3, Matrix3};
 use foundry::*;
 use gl::types::*;
 use std::collections::{HashMap};
@@ -64,7 +64,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 unsafe {
                     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
+                    
                     gl::ActiveTexture(gl::TEXTURE0);
                     camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
@@ -76,6 +76,7 @@ impl Renderer for DefaultOpenGlRenderer {
             }
         }
         self.render_ui(components); // todo : better way, with new textures etc
+        
 
         
     }
