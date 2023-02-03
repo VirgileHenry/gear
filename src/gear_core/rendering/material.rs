@@ -47,10 +47,16 @@ impl Material {
     pub fn get_program_name(&self) -> &str {
         &self.shader_program
     }
+
+    pub fn get_mat_properties<T: 'static>(&mut self) -> Option<&mut T> {
+        self.properties.as_any_mut().downcast_mut()
+    }
 }
 
 pub trait MaterialProperties {
     fn set_properties_to_shader(&self, shader: &ShaderProgram);
+    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 
