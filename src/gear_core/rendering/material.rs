@@ -6,7 +6,7 @@ use gl::DeleteTextures;
 use super::shaders::{ShaderProgramRef, ShaderProgram};
 use crate::gear_core::rendering::opengl::color::Color;
 use crate::material::texture::Texture2D;
-use crate::Text;
+//use crate::Text;
 
 
 pub struct Material {
