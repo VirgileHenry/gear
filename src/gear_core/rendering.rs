@@ -20,6 +20,7 @@ pub use renderer::{
 
 pub use material::{
     Material,
+    MaterialProperties,
     material_presets::*,
     texture::*,
 };
