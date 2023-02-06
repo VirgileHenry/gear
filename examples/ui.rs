@@ -13,9 +13,11 @@ fn main() {
         MONOCHROME_LIT_FRAG_SHADER,
         DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
+    let ui_shader = ShaderProgram::simple_program(UI_MONOCHROME_FRAG_SHADER, UI_DEFAULT_VERT_SHADER).expect("Ah, erreur dans les shader ui");
 
     // register the shader program in the renderer
     renderer.register_shader_program("defaultProgram", program); // todo : automate this task
+    renderer.register_shader_program("UIShader", ui_shader);
 
     // create a mesh renderer from the shader program
     let mesh = Mesh::sphere(1.0, 40);
@@ -61,7 +63,8 @@ fn main() {
     }));
     let mut tf = UITransform::origin().at(Vector2::new(100., 100.)).relative_sized(Vector2::new(0.2, 0.2)).anchored(UIAnchorPoints::TopLeft);
     tf.recompute_screen_pos(window_size.0, window_size.1);
-    let button = create_entity!(&mut world.components; tf, button);
+    let button_renderer = UIRenderer::new(Material::from_program("UIShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.8, 0.5, 0.6)})));
+    let button = create_entity!(&mut world.components; tf, button, button_renderer);
 
     world.register_system(system, 10);
     // start main loop

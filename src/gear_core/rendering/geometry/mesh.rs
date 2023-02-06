@@ -4,7 +4,7 @@ extern crate cgmath;
 extern crate gl;
 
 use crate::gear_core::rendering::{
-    geometry::primitives::Vertex, 
+    geometry::vertex::Vertex, 
 };
 
 
