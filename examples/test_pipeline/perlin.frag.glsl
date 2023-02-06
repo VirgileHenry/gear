@@ -7,8 +7,6 @@ in VS_OUTPUT {
     vec2 UV;
 } IN;
 
-out vec4 Color;
-
 out vec4 FragColor;
 
 vec3 hash(vec3 v) {
@@ -123,6 +121,7 @@ vec3 colormap2(float val) {
 }
 
 void main() {
-    float val = (fractal(vec3(IN.UV*10., time))+1.)*.5;
+    //float val = (fractal(vec3(IN.UV*10., time))+1.)*.5;
+    float val = (ridges(vec3(IN.UV*10., time), 10.));
     FragColor = vec4(vec3(val), 1.);
 }
