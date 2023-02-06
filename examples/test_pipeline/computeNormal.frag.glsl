@@ -25,5 +25,5 @@ void main() {
     float b = height(IN.UV-ofy);
 
     vec3 n = normalize(vec3((l-r)/(2.*ps.x), (b-t)/(2.*ps.y), 1.));
-    FragColor = vec4(n, 1.);
+    FragColor = vec4(n*.5+.5, 1.);
 }

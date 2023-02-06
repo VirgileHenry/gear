@@ -81,6 +81,8 @@ impl ShaderPipelineNode {
         // Setting shader parameters
         self.shader.set_used();
 
+        gl::Viewport(0, 0, self.texture.dimensions.0, self.texture.dimensions.1);
+
         let mut current_active_tex = 0;
         gl::ActiveTexture(gl::TEXTURE0 + current_active_tex);
 
