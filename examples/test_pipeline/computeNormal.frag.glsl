@@ -12,7 +12,6 @@ float height(vec2 p) {
     return texture(heightMap, p).x;
 }
 
-
 void main() {
     vec2 ps = 1./textureSize(heightMap, 0);
 

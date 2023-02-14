@@ -1,21 +1,23 @@
+use std::collections::HashMap;
+
+use cgmath::{Matrix3, SquareMatrix, Vector3, Vector4};
+use foundry::*;
+use gl::types::*;
+
 use crate::{gear_core::{
     geometry::transform::Transform,
     rendering::{
         camera::CameraComponent,
         geometry::mesh_renderer::MeshRenderer,
         lighting::light::MainLight,
-        shaders::{ShaderProgram},
+        shaders::ShaderProgram,
     },
     ui::{
-        UITransform,
-        UIRenderer
+        UIRenderer,
+        UITransform
     },
 }, MeshRenderingBuffers};
-use crate::{COPY_FRAG_SHADER, Mesh, COPY_VERT_SHADER};
-use cgmath::{SquareMatrix, Vector3, Matrix3};
-use foundry::*;
-use gl::types::*;
-use std::collections::{HashMap};
+use crate::{COPY_FRAG_SHADER, COPY_VERT_SHADER, Mesh};
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -38,7 +40,7 @@ impl DefaultOpenGlRenderer {
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let mesh_renderer = MeshRenderingBuffers::from(&mesh);
 
-        use super::shaders::shaders_files::{MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER};
+        use super::shaders::shaders_files::{DEFAULT_VERT_SHADER, MISSING_FRAG_SHADER};
         DefaultOpenGlRenderer {
             shader_programs: HashMap::new(),
             missing_shader_program: ShaderProgram::simple_program(MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER)
@@ -86,7 +88,6 @@ impl Renderer for DefaultOpenGlRenderer {
 impl DefaultOpenGlRenderer {
     fn render_scene(&self, components: &mut ComponentTable) {
         // found main camera
-
         for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
             // todo: render only if needed
             // todo: render main at the end ?
@@ -110,6 +111,7 @@ impl DefaultOpenGlRenderer {
                 gl::DepthFunc(gl::LESS);
                 gl::Viewport(0, 0, camera.get_dimensions().0 as GLsizei, camera.get_dimensions().1 as GLsizei);
                 camera.bind();
+                //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
 
@@ -128,7 +130,7 @@ impl DefaultOpenGlRenderer {
                 current_program.set_vec3("camPos", cam_transform.position());
                 // set main light scene
                 for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
-                    current_program.set_vec3("mainLightPos", light_tf.position());
+                    current_program.set_vec3("mainLightDir", (light_tf.world_pos() * Vector4::unit_z()).truncate());
                     current_program.set_vec3("mainLightColor", light.color_as_vec());
                     current_program.set_vec3("ambientColor", light.ambient_as_vec());
                     break; // only first main light taken into account, the others would override the first one so let's avoid useless code
@@ -145,6 +147,8 @@ impl DefaultOpenGlRenderer {
             }
             unsafe {
                 camera.unbind();
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+
             }
             break; // render only once in case there are multiple main camera component (and avoid useless shooting)
         }

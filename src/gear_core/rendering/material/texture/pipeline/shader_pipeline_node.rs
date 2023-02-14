@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 use std::iter::Map;
 use std::os::unix::fs::FileTypeExt;
-use cgmath::{Matrix4, Vector3};
-use gl::types::GLuint;
-use crate::gear_core::material::texture::{Texture2D, TexturePresets};
-use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderPipelineNodeInput, ShaderProgram};
 
+use cgmath::{Matrix4, Vector3, Vector4};
+use gl::types::GLuint;
+
+use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderPipelineNodeInput, ShaderProgram};
+use crate::gear_core::material::texture::{Texture2D, TexturePresets};
 
 pub struct ShaderPipelineNodeParam {
     pub ints: HashMap<String, i32>,
     pub floats: HashMap<String, f32>,
     pub vec3s: HashMap<String, Vector3<f32>>,
+    pub vec4s: HashMap<String, Vector4<f32>>,
     pub mat4s: HashMap<String, Matrix4<f32>>,
 }
 
@@ -29,6 +31,7 @@ impl ShaderPipelineNodeParam {
             ints: Default::default(),
             floats: Default::default(),
             vec3s: Default::default(),
+            vec4s: Default::default(),
             mat4s: Default::default(),
         }
     }
@@ -131,6 +134,10 @@ impl ShaderPipelineNode {
         self.param.vec3s.insert(name.parse().unwrap(), val);
     }
 
+    pub fn set_vec4(&mut self, name: &str, val: Vector4<f32>) {
+        self.param.vec4s.insert(name.parse().unwrap(), val);
+    }
+
     pub fn set_mat4(&mut self, name: &str, val: Matrix4<f32>) {
         self.param.mat4s.insert(name.parse().unwrap(), val);
     }
@@ -150,6 +157,9 @@ impl ShaderPipelineNode {
 
         for (name, val) in &self.param.vec3s {
             shader.set_vec3(name, *val);
+        }
+        for (name, val) in &self.param.vec4s {
+            shader.set_vec4(name, *val);
         }
     }
 

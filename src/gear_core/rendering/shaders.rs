@@ -1,10 +1,9 @@
-extern crate gl;
 extern crate cgmath;
+extern crate gl;
 
 
-use std::ffi::{CString, CStr};
+use std::ffi::{CStr, CString};
 use std::fs;
-
 
 pub struct ShaderProgram {
     id: gl::types::GLuint,
@@ -225,12 +224,30 @@ impl ShaderProgram {
     pub fn set_vec3(&self, name: &str, val: cgmath::Vector3<f32>) {
         unsafe {
             let c_name = CString::new(name)
-            .unwrap()
-            .into_bytes_with_nul();
+                .unwrap()
+                .into_bytes_with_nul();
             let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
             if loc != -1 {
                 gl::Uniform3fv(
-                    loc, 
+                    loc,
+                    1,
+                    &val[0] as *const f32
+                )
+            }
+        }
+    }
+
+    /// Set a vector4 uniform.
+    /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
+    pub fn set_vec4(&self, name: &str, val: cgmath::Vector4<f32>) {
+        unsafe {
+            let c_name = CString::new(name)
+                .unwrap()
+                .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::Uniform4fv(
+                    loc,
                     1,
                     &val[0] as *const f32
                 )

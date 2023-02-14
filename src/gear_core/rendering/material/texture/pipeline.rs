@@ -1,7 +1,9 @@
 use std::collections::HashMap;
-use cgmath::{Matrix4, Vector3};
-use crate::pipeline::shader_pipeline_node::{ShaderPipelineNode};
+
+use cgmath::{Matrix4, Vector3, Vector4};
+
 use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderProgram, Texture2D};
+use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
 
 mod shader_pipeline_node;
 
@@ -66,7 +68,7 @@ impl ShaderPipeline {
         }
     }
 
-    pub unsafe fn compute(&self, shader_node_name: &str) {
+    pub fn compute(&self, shader_node_name: &str) {
         // making sure that each node is compted with the right order
         match self.links.get(shader_node_name).unwrap() {
             ShaderPipelineNodeInput::Nodes(hm) => {
@@ -77,7 +79,9 @@ impl ShaderPipeline {
             _ => ()
         }
 
-        self.get_node(shader_node_name).compute(&self.mesh_renderer, self.links.get(shader_node_name).unwrap(), &self.nodes);
+        unsafe {
+            self.get_node(shader_node_name).compute(&self.mesh_renderer, self.links.get(shader_node_name).unwrap(), &self.nodes);
+        }
     }
 
     pub fn get_texture(&self, shader_node_name: &str) -> Texture2D {
@@ -102,6 +106,10 @@ impl ShaderPipeline {
 
     pub fn set_vec3(&mut self, node_name: &str, name: &str, val: Vector3<f32>) {
         self.get_mut_node(node_name).set_vec3(name, val);
+    }
+
+    pub fn set_vec4(&mut self, node_name: &str, name: &str, val: Vector4<f32>) {
+        self.get_mut_node(node_name).set_vec4(name, val);
     }
 
     pub fn set_mat4(&mut self, node_name: &str, name: &str, val: Matrix4<f32>) {

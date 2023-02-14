@@ -1,5 +1,6 @@
 use gl::TEXTURE_2D;
 use glfw::ffi::glfwGetTime;
+
 use Gear::*;
 
 fn main() {
@@ -22,8 +23,47 @@ fn main() {
     let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
 
 
+    /* Pipeline set up */
+    let mut pipeline = ShaderPipeline::new();
 
+    pub static PERLIN_FRAG: &str = include_str!("test_pipeline/perlin.frag.glsl");
+    let perlin_shader = ShaderProgram::simple_program(PERLIN_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
+    pipeline.add_node("perlin", (1000, 1000), perlin_shader);
+    pipeline.set_float("perlin", "time", 1.0);
 
+    pub static ISLAND_MASK_FRAG: &str = include_str!("test_pipeline/island_mask.frag.glsl");
+    let island_mask_shader = ShaderProgram::simple_program(ISLAND_MASK_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
+    pipeline.add_node("island_mask", (1000, 1000), island_mask_shader);
+    pipeline.set_float("island_mask", "global_falloff", 0.8);
+    pipeline.set_float("island_mask", "falloff_speed", 16.0);
+    pipeline.set_vec3("island_mask", "islands", Vector3::<f32>::new(0.5, 0.5, 0.2));
+
+    pub static MULTIPLIER_FRAG: &str = include_str!("test_pipeline/multiplier.frag.glsl");
+    let multiplier_shader = ShaderProgram::simple_program(MULTIPLIER_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
+    pipeline.add_node("multiplier", (1000, 1000), multiplier_shader);
+    pipeline.link_nodes("perlin", "height_map", "multiplier");
+    pipeline.link_nodes("island_mask", "mask_tex", "multiplier");
+    pipeline.set_float("multiplier", "a", 0.45);
+    pipeline.set_float("multiplier", "b", 0.505);
+    pipeline.set_int("multiplier", "shape", 8);
+
+    pub static NORMAL_FRAG: &str = include_str!("test_pipeline/computeNormal.frag.glsl");
+    let normal_shader = ShaderProgram::simple_program(NORMAL_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
+    pipeline.add_node("normal", (1000, 1000), normal_shader);
+    pipeline.link_nodes("multiplier", "heightMap", "normal");
+
+    unsafe {
+        pipeline.compute("normal");
+    }
+
+    let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
+    unsafe {
+        material.attach_texture(pipeline.get_texture("normal"));
+    }
+    let mesh_renderer = MeshRenderer::new(&mesh, material);
+
+    let timer = TimingSystem{timer:0.0, pipeline};
+    let system = System::new(Box::new(timer), UpdateFrequency::PerFrame);
 
 
     // assign the renderer to the window
@@ -39,45 +79,15 @@ fn main() {
     // create cube and camera entity
     let world = engine.get_world();
 
-    let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
-
-    /* Pipeline set up */
-    let mut pipeline = ShaderPipeline::new();
-
-    pub static PERLIN_FRAG: &str = include_str!("test_pipeline/perlin.frag.glsl");
-    let perlin_shader = ShaderProgram::simple_program(PERLIN_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_node("perlin", (1000, 1000), perlin_shader);
-    pipeline.set_float("perlin", "time", 1.0);
-
-    pub static NORMAL_FRAG: &str = include_str!("test_pipeline/computeNormal.frag.glsl");
-    let normal_shader = ShaderProgram::simple_program(NORMAL_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_node("normal", (1000, 1000), normal_shader);
-    pipeline.link_nodes("perlin", "heightMap", "normal");
-
-    unsafe {
-        pipeline.compute("normal");
-    }
-
-
-    let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
-    unsafe {
-        material.attach_texture(pipeline.get_texture("normal"));
-    }
-    let mesh_renderer = MeshRenderer::new(&mesh, material);
-
     let _plane = create_entity!(&mut world.components; Transform::origin(), mesh_renderer);
-
-    let timer = TimingSystem{timer:0.0, pipeline};
-    let system = System::new(Box::new(timer), UpdateFrequency::PerFrame);
-
+    let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
-    let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, -0.0, 1.0)), camera_component);
+    let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 0.0, 1.0)), camera_component);
 
     // start main loop
     world.register_system(system, 10);
 
     engine.main_loop();
-
 }
 
 
@@ -88,8 +98,9 @@ struct TimingSystem {
 
 impl Updatable for TimingSystem {
     fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
-        self.timer += delta*0.05;
+        self.timer += delta*0.00;
         self.pipeline.set_float("perlin", "time", self.timer);
+        self.pipeline.set_float("island_mask", "time", self.timer);
         unsafe {
             self.pipeline.compute("normal");
         }

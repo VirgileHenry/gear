@@ -1,10 +1,14 @@
-use crate::gear_core::material::texture::TexturePresets;
-use crate::material::texture::Texture2D;
+extern crate cgmath;
+extern crate gl;
+
+use cgmath::{Matrix4, SquareMatrix};
+use cgmath::num_traits::FloatConst;
 use foundry::*;
 use gl::types::{GLint, GLsizei, GLuint};
 
-extern crate cgmath;
-extern crate gl;
+use crate::gear_core::material::texture::TexturePresets;
+use crate::material::texture::Texture2D;
+
 
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -27,6 +31,7 @@ pub struct CameraComponent {
 }
 
 impl CameraComponent {
+
     fn generate_framebuffer(&mut self) {
         self.framebuffer_id = 0;
         unsafe {
@@ -78,8 +83,7 @@ impl CameraComponent {
         depth_presets.format = gl::DEPTH_COMPONENT;
 
         let mut camera = CameraComponent {
-            perspective_matrix: OPENGL_TO_WGPU_MATRIX
-                * cgmath::perspective(cgmath::Deg(fovy), aspect_ratio, znear, zfar),
+            perspective_matrix: cgmath::perspective(cgmath::Deg(fovy), aspect_ratio, znear, zfar),
             field_of_view_y: fovy,
             znear: znear,
             zfar: zfar,
@@ -97,6 +101,7 @@ impl CameraComponent {
             ),
             framebuffer_id: 0,
         };
+        println!("{:?}", camera.perspective_matrix);
         camera.generate_framebuffer();
         camera
     }

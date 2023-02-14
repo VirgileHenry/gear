@@ -1,8 +1,10 @@
-use cgmath::num_traits::clamp;
 use std::ffi::c_void;
 
+use cgmath::num_traits::clamp;
 use gl::types::{GLenum, GLint};
 use image::RgbaImage;
+
+pub use pipeline::*;
 
 #[derive(Copy, Clone)]
 pub struct TexturePresets {
@@ -54,9 +56,9 @@ impl TexturePresets {
         Self {
             wrap_s: gl::CLAMP_TO_EDGE,
             wrap_t: gl::CLAMP_TO_EDGE,
-            min_filter: gl::NEAREST,
-            mag_filter: gl::NEAREST,
-            internal_format: gl::RGBA,
+            min_filter: gl::LINEAR,
+            mag_filter: gl::LINEAR,
+            internal_format: gl::RGBA32F,
             format: gl::RGBA,
         }
     }
@@ -181,4 +183,3 @@ impl Texture2D {
 
 pub mod pipeline;
 
-pub use pipeline::*;

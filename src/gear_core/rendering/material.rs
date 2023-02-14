@@ -3,10 +3,10 @@
 
 use gl::DeleteTextures;
 
-use super::shaders::{ShaderProgramRef, ShaderProgram};
 use crate::gear_core::rendering::opengl::color::Color;
 use crate::material::texture::Texture2D;
 
+use super::shaders::{ShaderProgram, ShaderProgramRef};
 
 pub struct Material {
     /// shader program to use
@@ -28,6 +28,9 @@ impl Material {
 
     pub fn attach_texture(&mut self, texture: Texture2D) {
         self.textures.push(texture);
+    }
+    pub fn pop_texture(&mut self) -> Option<Texture2D> {
+        self.textures.pop()
     }
 
     #[inline]
