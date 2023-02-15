@@ -1,4 +1,5 @@
 pub use cgmath::{
+    Deg,
     Euler,
     Matrix4,
     Quaternion,

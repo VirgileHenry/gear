@@ -26,6 +26,61 @@ impl ShaderProgramRef {
 }
 
 impl ShaderProgram {
+    pub fn compute_program(compute_source: &str) -> Result<Self, String> {
+        // create a shader program
+        let program_id = unsafe { gl::CreateProgram() };
+
+        let compute_shader = match Shader::from_compute_string(compute_source) {
+            Ok(shader) => shader,
+            Err(error) => {
+                let mut s = String::from("FRAGMENT::");
+                s.push_str(&*error);
+                return Err(s);
+            },
+        };
+
+        unsafe {
+            gl::AttachShader(program_id, compute_shader.id());
+        }
+
+        // link the program
+        unsafe { gl::LinkProgram(program_id); }
+
+        // error handling (same as shaders)
+        let mut success: gl::types::GLint = 1;
+        unsafe {
+            gl::GetProgramiv(program_id, gl::LINK_STATUS, &mut success);
+        }
+
+        if success == 0 {
+            let mut len: gl::types::GLint = 0;
+            unsafe {
+                gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
+            }
+
+            let error = create_whitespace_cstring_with_len(len as usize);
+
+            unsafe {
+                gl::GetProgramInfoLog(
+                    program_id,
+                    len,
+                    std::ptr::null_mut(),
+                    error.as_ptr() as *mut gl::types::GLchar
+                );
+            }
+
+            return Err(error.to_string_lossy().into_owned());
+        }
+
+        // now the program is linked, we can unbind shaders
+        unsafe {
+            gl::DetachShader(program_id, compute_shader.id());
+        }
+
+        // return the program
+        Ok(ShaderProgram { id: program_id })
+    }
+
     pub fn simple_program(frag_source: &str, vert_source: &str) -> Result<ShaderProgram, String> {
         // create a shader program
         let program_id = unsafe { gl::CreateProgram() };
@@ -375,6 +430,10 @@ impl Shader {
 
     pub fn from_frag_string(source: &str) -> Result<Shader, String> {
         Shader::from_string(source, gl::FRAGMENT_SHADER)
+    }
+
+    pub fn from_compute_string(source: &str) -> Result<Shader, String> {
+        Shader::from_string(source, gl::COMPUTE_SHADER)
     }
 
     pub fn id(&self) -> gl::types::GLuint {

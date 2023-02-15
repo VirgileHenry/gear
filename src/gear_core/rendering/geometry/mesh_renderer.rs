@@ -45,6 +45,7 @@ impl MeshRenderer {
         self.material.attach_texture(texture);
     }
     pub fn pop_texture(&mut self) -> Option<Texture2D> {
+        self.material.pop_texture();
         self.material.pop_texture()
     }
 

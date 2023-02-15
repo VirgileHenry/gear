@@ -37,6 +37,5 @@ void main()
     vec3 result = (ambient + diffuse + specular) * color;
 
     // gamma correction
-    vec3 result_srgb = pow(result, vec3(1./2.2));
-    Color = vec4(result_srgb, 1.0f);
+    Color = vec4(result, 1.0f);
 }

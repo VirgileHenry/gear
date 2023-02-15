@@ -16,7 +16,7 @@ use crate::{gear_core::{
         UIRenderer,
         UITransform
     },
-}, MeshRenderingBuffers};
+}, MeshRenderingBuffers, RENDER_FRAG_SHADER};
 use crate::{COPY_FRAG_SHADER, COPY_VERT_SHADER, Mesh};
 
 pub trait Renderer {
@@ -35,7 +35,7 @@ pub struct DefaultOpenGlRenderer {
 impl DefaultOpenGlRenderer {
     pub fn new() -> DefaultOpenGlRenderer {
 
-        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, COPY_VERT_SHADER)
+        let copy_shader = ShaderProgram::simple_program(RENDER_FRAG_SHADER, COPY_VERT_SHADER)
             .expect("Error while generating internal (copy) shader");
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let mesh_renderer = MeshRenderingBuffers::from(&mesh);

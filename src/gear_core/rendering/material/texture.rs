@@ -36,7 +36,7 @@ impl TexturePresets {
             wrap_t: gl::CLAMP_TO_BORDER,
             min_filter: gl::LINEAR,
             mag_filter: gl::LINEAR,
-            internal_format: gl::RGBA,
+            internal_format: gl::RGBA32F,
             format: gl::RGBA,
         }
     }
