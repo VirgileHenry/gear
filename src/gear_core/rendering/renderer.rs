@@ -66,7 +66,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 unsafe {
                     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-                    
+
                     gl::ActiveTexture(gl::TEXTURE0);
                     camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
@@ -78,9 +78,7 @@ impl Renderer for DefaultOpenGlRenderer {
             }
         }
         self.render_ui(components); // todo : better way, with new textures etc
-        
 
-        
     }
 
 }
@@ -111,7 +109,7 @@ impl DefaultOpenGlRenderer {
                 gl::DepthFunc(gl::LESS);
                 gl::Viewport(0, 0, camera.get_dimensions().0 as GLsizei, camera.get_dimensions().1 as GLsizei);
                 camera.bind();
-                //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                camera.set_render_options();
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
 

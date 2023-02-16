@@ -9,7 +9,6 @@ use gl::types::{GLint, GLsizei, GLuint};
 use crate::gear_core::material::texture::TexturePresets;
 use crate::material::texture::Texture2D;
 
-
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
@@ -28,6 +27,8 @@ pub struct CameraComponent {
     color_attachment: Texture2D,
     depth_attachment: Texture2D,
     framebuffer_id: GLuint,
+
+    show_wireframe: bool, // todo : better way to handle camera render options
 }
 
 impl CameraComponent {
@@ -100,6 +101,8 @@ impl CameraComponent {
                 None,
             ),
             framebuffer_id: 0,
+
+            show_wireframe: false,
         };
         println!("{:?}", camera.perspective_matrix);
         camera.generate_framebuffer();
@@ -159,6 +162,18 @@ impl CameraComponent {
 
     pub fn get_dimensions(&self) -> (i32, i32) {
         self.viewport_dimensions
+    }
+
+    pub fn toggle_show_wireframe(&mut self) {
+        self.show_wireframe = !self.show_wireframe;
+    }
+
+    pub unsafe fn set_render_options(&self) {
+        if (self.show_wireframe) {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        } else {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+        }
     }
 
 }
