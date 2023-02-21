@@ -61,7 +61,7 @@ fn main() {
     button.on_enter = Some(Box::new(|_, _, entering, _| {
         println!("button got entered : {}", entering);
     }));
-    let mut tf = UITransform::origin().at(Vector2::new(100., 100.)).relative_sized(Vector2::new(0.2, 0.2)).anchored(UIAnchorPoints::TopLeft);
+    let mut tf = UITransform::origin().relative_sized(Vector2::new(1., 1.)).anchored(UIAnchorPoints::TopLeft);
     tf.recompute_screen_pos(window_size.0, window_size.1);
     let button_renderer = UIRenderer::new(Material::from_program("UIShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.8, 0.5, 0.6)})));
     let button = create_entity!(&mut world.components; tf, button, button_renderer);

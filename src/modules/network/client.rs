@@ -7,32 +7,32 @@ use crate::NetworkSerializable;
 use super::{packet::Packet, buffer::NetworkBuffer};
 
 /// client representation of the connection to the server
-pub struct Client<E: NetworkSerializable, H: ClientHandler<E>> {
+pub struct Client<H: ClientHandler> {
     client_handler: H,
-    enum_marker: PhantomData<E>,
     server_addr: SocketAddr,
     // all this tcp stuff could be refactor into own struct ? no uses for now
     tcp_connection: Option<TcpStream>,
+    udp_connection: Option<UdpSocket>,
     tcp_buffer: NetworkBuffer,
     tcp_incoming_packet: Option<Packet>,
     tcp_connecting_thread: Option<JoinHandle<Result<TcpStream, String>>>,
     // let's implement tcp !
 }
 
-impl<E: NetworkSerializable, H: ClientHandler<E>> Client<E, H> {
-    pub fn new(client_handler: H, server_addr: SocketAddr) -> Client<E, H> {
+impl<H: ClientHandler> Client<H> {
+    pub fn new(client_handler: H, server_addr: SocketAddr) -> Client<H> {
         Client {
             client_handler: client_handler,
-            enum_marker: PhantomData,
             server_addr: server_addr,
             tcp_connection: None,
+            udp_connection: None,
             tcp_buffer: NetworkBuffer::new(),
             tcp_incoming_packet: None,
             tcp_connecting_thread: None,
         }
     }
 
-    pub fn try_connect_tcp(&mut self) {
+    pub fn try_connect(&mut self) {
         // clone the adress so we won't move ourself in the thread
         let address = self.server_addr;
         self.tcp_connecting_thread = Some(thread::spawn(move || {
@@ -51,67 +51,82 @@ impl<E: NetworkSerializable, H: ClientHandler<E>> Client<E, H> {
     }
 
     pub fn get_incoming_packets(&mut self) -> Vec<Packet> {
-        return match self.tcp_buffer.read_tcp(match &mut self.tcp_connection {
-            Some(connection) => connection,
-            None => return Vec::new(), // can't read if no connection
-        }) {
-            Ok(new_data_available) => {
-                if new_data_available {
-                    // let's read !
-                    // check if there is an unfinished packet to read
-                    let mut result = Vec::new();
-                    if let Some(mut packet) = self.tcp_incoming_packet.take() {
-                        // try complete the packet
-                        if self.tcp_buffer.try_complete_packet(&mut packet) {
-                            result.push(packet);
-                        }
-                        else {
-                            // buffer is empty, we can return
-                            return result;
-                        }
-                    }
-                    loop {
-                        let new_packet = self.tcp_buffer.try_read_packet();
-                        match new_packet {
-                            Some(packet) => {
-                                if packet.awaiting_size() == 0 {
-                                    // packet complete, keep getting more !
-                                    result.push(packet);
+        let mut result = Vec::new();
+        match &mut self.tcp_connection {
+            Some(connection) => {
+                match self.tcp_buffer.read_tcp(connection) {
+                    Ok(new_data_available) => {
+                        if new_data_available {
+                            // let's read !
+                            // check if there is an unfinished packet to read
+                            let mut tcp_result = Vec::new();
+                            if let Some(mut packet) = self.tcp_incoming_packet.take() {
+                                // try complete the packet
+                                if self.tcp_buffer.try_complete_packet(&mut packet) {
+                                    tcp_result.push(packet);
                                 }
                                 else {
-                                    // put the packet as awaiting and break
-                                    self.tcp_incoming_packet = Some(packet);
-                                    break;
+                                    // buffer is empty, we can return
+                                    return tcp_result;
                                 }
-                            },
-                            None => break,
+                            }
+                            loop {
+                                let new_packet = self.tcp_buffer.try_read_packet();
+                                match new_packet {
+                                    Some(packet) => {
+                                        if packet.awaiting_size() == 0 {
+                                            // packet complete, keep getting more !
+                                            tcp_result.push(packet);
+                                        }
+                                        else {
+                                            // put the packet as awaiting and break
+                                            self.tcp_incoming_packet = Some(packet);
+                                            break;
+                                        }
+                                    },
+                                    None => break,
+                                }
+                            }
+                            result.append(&mut tcp_result);
                         }
-                    }
-                    result
+                    },
+                    Err(_e) => {}, // todo : handle this (reading error)
                 }
-                else {
-                    // no new messages.
-                    Vec::new()
-                }
-            },
-            Err(_e) => Vec::new(), // todo : handle this (reading error)
+            }
+            _ => {},
+        }
+        result
+    }
+
+    pub fn send_tcp(&mut self, message: H::ClientsMessages) {
+        let packet = Packet::from(message);
+        match &mut self.tcp_connection {
+            Some(connection) => {
+                match connection.write(&packet.as_bytes()) {
+                    Ok(_amount_written) => {/* all good */},
+                    Err(e) => println!("[NETWORK CLIENT] -> Error while sending data : {e}")
+                };
+            }
+            None => println!("[NETWORK CLIENT] => Unable to send data to server : no active tcp connection !"),
         }
     }
 
-    pub fn send_tcp(&mut self, message: E) {
+    pub fn send_udp(&mut self, message: H::ClientsMessages) {
         let packet = Packet::from(message);
-        if let Some(mut connection) = self.tcp_connection.take() {
-            match connection.write(&packet.as_bytes()) {
-                Ok(_amount_written) => {/* all good */},
-                Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}")
-            };
-            self.tcp_connection = Some(connection); // moving twice really ugly // todo
+        match &mut self.udp_connection {
+            Some(connection) => {
+                match connection.send(&packet.as_bytes()) {
+                    Ok(_amount_written) => {/* all good */},
+                    Err(e) => println!("[NETWORK CLIENT] -> Error while sending data : {e}")
+                };
+            }
+            None => println!("[NETWORK CLIENT] => Unable to send data to server : no active udp connection !"),
         }
     }
 
 }
 
-impl<E: NetworkSerializable + 'static, H: ClientHandler<E> + 'static> Updatable for Client<E, H> {
+impl<H: ClientHandler + 'static> Updatable for Client<H> {
     fn update(&mut self, components: &mut ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
         // check if we are trying to connect to a server
         if let Some(handle) = self.tcp_connecting_thread.take() {
@@ -166,12 +181,15 @@ impl<E: NetworkSerializable + 'static, H: ClientHandler<E> + 'static> Updatable 
 pub enum DisconnectReason {
     ClientShutDown,
     ServerShutDown,
+    ServerKick,
 }
 
-pub trait ClientHandler<E: NetworkSerializable> {
-    fn on_connected(&mut self, components: &mut ComponentTable) -> Vec<E>;
+pub trait ClientHandler {
+    type ServerMessages: NetworkSerializable;
+    type ClientsMessages: NetworkSerializable;
+    fn on_connected(&mut self, components: &mut ComponentTable) -> Vec<Self::ClientsMessages>;
     fn on_connection_failed(&mut self, components: &mut ComponentTable);
     fn on_disconected(&mut self, reason: DisconnectReason, components: &mut ComponentTable);
-    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<E>;
-    fn handle_tcp_message(&mut self, message: E, components: &mut ComponentTable) -> Vec<E>;
+    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<Self::ClientsMessages>;
+    fn handle_tcp_message(&mut self, message: Self::ServerMessages, components: &mut ComponentTable) -> Vec<Self::ClientsMessages>;
 }
