@@ -2,5 +2,4 @@
 pub use network::*;
 
 mod network;
-mod compute_shader;
 

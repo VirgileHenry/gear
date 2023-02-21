@@ -8,14 +8,16 @@ use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
 mod shader_pipeline_node;
 
 pub enum ShaderPipelineNodeInput {
-    NotSet, // enlever ?
+    NotSet,
+
     Texture(String, Texture2D),
     // (texture name, node_name, name of the texture for the eventual compute shader node)
     Nodes(HashMap<String, (String, Option<String>)>),
 }
 
 pub struct ShaderPipeline {
-    nodes: HashMap<String, ShaderPipelineNode>,
+    // (NodeName -> (NodeObject, RequireUpdate))
+    nodes: HashMap<String, (ShaderPipelineNode, bool)>,
     links: HashMap<String, ShaderPipelineNodeInput>,
 
     mesh_renderer: MeshRenderer,
@@ -35,12 +37,12 @@ impl ShaderPipeline {
     }
 
     pub fn add_render_node(&mut self, node_name: &str, dimensions: (i32, i32), shader: ShaderProgram) {
-        self.nodes.insert(node_name.parse().unwrap(), ShaderPipelineNode::new_frag(dimensions, shader));
+        self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_frag(dimensions, shader), true));
         self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
     }
 
-    pub fn add_compute_node(&mut self, node_name: &str, shader: ShaderProgram) {
-        self.nodes.insert(node_name.parse().unwrap(), ShaderPipelineNode::new_compute(shader));
+    pub fn add_compute_node(&mut self, node_name: &str, shader: ShaderProgram, dispatch_dimensions: (u32, u32, u32)) {
+        self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_compute(shader, dispatch_dimensions), true));
         self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
     }
 
@@ -96,20 +98,32 @@ impl ShaderPipeline {
         }
     }
 
-    pub fn compute(&self, shader_node_name: &str) {
+    pub fn compute(&mut self, shader_node_name: &str) -> bool {
+        let mut should_recompute = false;
         // making sure that each node is counted with the right order
-        match self.links.get(shader_node_name).unwrap() {
+        match self.links.remove(shader_node_name).unwrap() {
             ShaderPipelineNodeInput::Nodes(hm) => {
-                for (_, (node, _)) in hm {
-                    self.compute(&node);
+                for (_, (node_name, _)) in hm.iter() {
+                    should_recompute &= self.compute(&node_name);
                 }
+                self.links.insert(shader_node_name.to_string(), ShaderPipelineNodeInput::Nodes(hm));
             }
-            _ => ()
+            input => { self.links.insert(shader_node_name.parse().unwrap(), input); }
         }
 
-        unsafe {
-            self.get_node(shader_node_name).render(&self.mesh_renderer, self.links.get(shader_node_name).unwrap(), &self.nodes);
+        let mut require_update = self.node_require_update_mut(shader_node_name);
+        if !should_recompute && !*require_update {
+            return false;
         }
+        unsafe {
+            *require_update = false;
+            self.get_node(shader_node_name).execute(
+                &self.mesh_renderer,
+                self.links.get(shader_node_name).expect(&*format!("no link found for {}", shader_node_name)),
+                &self.nodes
+            );
+        }
+        true
     }
 
     pub fn get_texture(&self, shader_node_name: &str, tex_name: &Option<String>) -> Texture2D {
@@ -117,11 +131,19 @@ impl ShaderPipeline {
     }
 
     fn get_node(&self, node_name: &str) -> &ShaderPipelineNode {
-        self.nodes.get(node_name).expect("Trying to access a non existing node")
+        &self.nodes.get(node_name).expect("Trying to access a non existing node").0
     }
 
     fn get_node_mut(&mut self, node_name: &str) -> &mut ShaderPipelineNode {
-        self.nodes.get_mut(node_name).expect("Trying to access a non existing node")
+        &mut self.nodes.get_mut(node_name).expect("Trying to access a non existing node").0
+    }
+
+    fn node_require_update(&self, node_name: &str) -> &bool {
+        &self.nodes.get(node_name).expect("Trying to access a non existing node").1
+    }
+
+    fn node_require_update_mut(&mut self, node_name: &str) -> &mut bool {
+        &mut self.nodes.get_mut(node_name).expect("Trying to access a non existing node").1
     }
 
     pub fn set_int(&mut self, node_name: &str, name: &str, val: i32) {

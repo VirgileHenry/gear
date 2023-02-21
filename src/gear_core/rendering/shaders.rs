@@ -5,6 +5,8 @@ extern crate gl;
 use std::ffi::{CStr, CString};
 use std::fs;
 
+pub use compute_shader::*;
+
 use crate::Texture2D;
 
 pub struct ShaderProgram {
@@ -506,3 +508,5 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
 }
 
 pub(crate) mod shaders_files;
+mod compute_shader;
+
