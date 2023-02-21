@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cgmath::{Matrix4, Vector3, Vector4};
+use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 
 use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderProgram, Texture2D};
 use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
@@ -10,8 +10,8 @@ mod shader_pipeline_node;
 pub enum ShaderPipelineNodeInput {
     NotSet, // enlever ?
     Texture(String, Texture2D),
-    // (texture name, node_name)
-    Nodes(HashMap<String, String>),
+    // (texture name, node_name, name of the texture for the eventual compute shader node)
+    Nodes(HashMap<String, (String, Option<String>)>),
 }
 
 pub struct ShaderPipeline {
@@ -34,26 +34,54 @@ impl ShaderPipeline {
         }
     }
 
-    pub fn add_node(&mut self, node_name: &str, dimensions: (i32, i32), shader: ShaderProgram) {
-        self.nodes.insert(node_name.parse().unwrap(), ShaderPipelineNode::new(dimensions, shader));
+    pub fn add_render_node(&mut self, node_name: &str, dimensions: (i32, i32), shader: ShaderProgram) {
+        self.nodes.insert(node_name.parse().unwrap(), ShaderPipelineNode::new_frag(dimensions, shader));
         self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
     }
 
-    pub fn link_nodes(&mut self, output_node_name: &str, tex_name: &str, input_node_name: &str) {
+    pub fn add_compute_node(&mut self, node_name: &str, shader: ShaderProgram) {
+        self.nodes.insert(node_name.parse().unwrap(), ShaderPipelineNode::new_compute(shader));
+        self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
+    }
+
+    pub fn link_render_to_node(&mut self, output_node_name: &str, input_tex_name: &str, input_node_name: &str) {
         match self.links.get_mut(input_node_name).expect(&*format!("Node {} not found", input_node_name)) {
             ShaderPipelineNodeInput::Nodes(links) => {
                 links.insert(
-                    tex_name.parse().unwrap(),
-                    output_node_name.parse().unwrap(),
+                    input_tex_name.parse().unwrap(),
+                    (output_node_name.parse().unwrap(), None)
                 );
             }
             ShaderPipelineNodeInput::NotSet => {
-                let mut hm = HashMap::<String, String>::new();
+                let mut hm = HashMap::<String, (String, Option<String>)>::new();
                 hm.insert(
-                    tex_name.parse().unwrap(),
-                    output_node_name.parse().unwrap(),
+                    input_tex_name.parse().unwrap(),
+                    (output_node_name.parse().unwrap(), None),
                 );
                 self.links.insert(input_node_name.parse().unwrap(), ShaderPipelineNodeInput::Nodes(hm));
+            }
+            _ => panic!("The node {} only accept textures as input", input_node_name)
+        }
+    }
+
+    pub fn link_compute_to_node(&mut self, output_node_name: &str, output_tex_name: &str, input_tex_name: &str, input_node_name: &str) {
+        match self.links.get_mut(input_node_name).expect(&*format!("Node {} not found", input_node_name)) {
+            ShaderPipelineNodeInput::Nodes(links) => {
+                links.insert(
+                    input_tex_name.parse().unwrap(),
+                    (output_node_name.parse().unwrap(), Some(output_tex_name.to_string()))
+                );
+            }
+            ShaderPipelineNodeInput::NotSet => {
+                let mut hm = HashMap::<String, (String, Option<String>)>::new();
+                hm.insert(
+                    input_tex_name.parse().unwrap(),
+                    (output_node_name.parse().unwrap(), Some(output_tex_name.to_string())),
+                );
+                self.links.insert(
+                    input_node_name.parse().unwrap(),
+                    ShaderPipelineNodeInput::Nodes(hm)
+                );
             }
             _ => panic!("The node {} only accept textures as input", input_node_name)
         }
@@ -69,10 +97,10 @@ impl ShaderPipeline {
     }
 
     pub fn compute(&self, shader_node_name: &str) {
-        // making sure that each node is compted with the right order
+        // making sure that each node is counted with the right order
         match self.links.get(shader_node_name).unwrap() {
             ShaderPipelineNodeInput::Nodes(hm) => {
-                for (_, node) in hm {
+                for (_, (node, _)) in hm {
                     self.compute(&node);
                 }
             }
@@ -80,40 +108,44 @@ impl ShaderPipeline {
         }
 
         unsafe {
-            self.get_node(shader_node_name).compute(&self.mesh_renderer, self.links.get(shader_node_name).unwrap(), &self.nodes);
+            self.get_node(shader_node_name).render(&self.mesh_renderer, self.links.get(shader_node_name).unwrap(), &self.nodes);
         }
     }
 
-    pub fn get_texture(&self, shader_node_name: &str) -> Texture2D {
-        self.get_node(shader_node_name).get_texture()
+    pub fn get_texture(&self, shader_node_name: &str, tex_name: &Option<String>) -> Texture2D {
+        self.get_node(shader_node_name).get_texture(tex_name)
     }
 
     fn get_node(&self, node_name: &str) -> &ShaderPipelineNode {
-        self.nodes.get(node_name).expect("Trying to access an unexisting node")
+        self.nodes.get(node_name).expect("Trying to access a non existing node")
     }
 
-    fn get_mut_node(&mut self, node_name: &str) -> &mut ShaderPipelineNode {
-        self.nodes.get_mut(node_name).expect("Trying to access an unexisting node")
+    fn get_node_mut(&mut self, node_name: &str) -> &mut ShaderPipelineNode {
+        self.nodes.get_mut(node_name).expect("Trying to access a non existing node")
     }
 
     pub fn set_int(&mut self, node_name: &str, name: &str, val: i32) {
-        self.get_mut_node(node_name).set_int(name, val);
+        self.get_node_mut(node_name).set_int(name, val);
     }
 
     pub fn set_float(&mut self, node_name: &str, name: &str, val: f32) {
-        self.get_mut_node(node_name).set_float(name, val);
+        self.get_node_mut(node_name).set_float(name, val);
+    }
+
+    pub fn set_vec2(&mut self, node_name: &str, name: &str, val: Vector2<f32>) {
+        self.get_node_mut(node_name).set_vec2(name, val);
     }
 
     pub fn set_vec3(&mut self, node_name: &str, name: &str, val: Vector3<f32>) {
-        self.get_mut_node(node_name).set_vec3(name, val);
+        self.get_node_mut(node_name).set_vec3(name, val);
     }
 
     pub fn set_vec4(&mut self, node_name: &str, name: &str, val: Vector4<f32>) {
-        self.get_mut_node(node_name).set_vec4(name, val);
+        self.get_node_mut(node_name).set_vec4(name, val);
     }
 
     pub fn set_mat4(&mut self, node_name: &str, name: &str, val: Matrix4<f32>) {
-        self.get_mut_node(node_name).set_mat4(name, val);
+        self.get_node_mut(node_name).set_mat4(name, val);
     }
 }
 

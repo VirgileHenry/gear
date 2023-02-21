@@ -5,6 +5,8 @@ extern crate gl;
 use std::ffi::{CStr, CString};
 use std::fs;
 
+use crate::Texture2D;
+
 pub struct ShaderProgram {
     id: gl::types::GLuint,
 }
@@ -26,6 +28,10 @@ impl ShaderProgramRef {
 }
 
 impl ShaderProgram {
+
+    // todo : separate compute shaders and vert/frag shaders
+    /// Create a compute shader
+    /// /!\ Should not be used unless you're sure
     pub fn compute_program(compute_source: &str) -> Result<Self, String> {
         // create a shader program
         let program_id = unsafe { gl::CreateProgram() };
@@ -274,6 +280,24 @@ impl ShaderProgram {
         }
     }
 
+    /// Set a vector2 uniform.
+    /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
+    pub fn set_vec2(&self, name: &str, val: cgmath::Vector2<f32>) {
+        unsafe {
+            let c_name = CString::new(name)
+                .unwrap()
+                .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::Uniform2fv(
+                    loc,
+                    1,
+                    &val[0] as *const f32
+                )
+            }
+        }
+    }
+
     /// Set a vector3 uniform.
     /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
     pub fn set_vec3(&self, name: &str, val: cgmath::Vector3<f32>) {
@@ -305,6 +329,28 @@ impl ShaderProgram {
                     loc,
                     1,
                     &val[0] as *const f32
+                )
+            }
+        }
+    }
+
+    /// Set an image2D uniform.
+    /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
+    pub fn set_image2d(&self, name: &str, image: &Texture2D) {
+        unsafe {
+            let c_name = CString::new(name)
+                .unwrap()
+                .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::BindImageTexture(
+                    loc as gl::types::GLuint,
+                    image.get_id(),
+                    0,
+                    gl::FALSE,
+                    0,
+                    gl::READ_WRITE, // todo : READ_WRITE or other ?
+                    image.get_presets().internal_format
                 )
             }
         }

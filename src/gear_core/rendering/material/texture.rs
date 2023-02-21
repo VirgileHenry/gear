@@ -99,7 +99,6 @@ impl Texture2D {
 
         let dimensions = buffer.dimensions();
         let dimensions: (i32, i32) = (dimensions.0 as i32, dimensions.1 as i32);
-        println!("dimensions = {dimensions:?}");
         let texture = Self::new_from_presets(dimensions, TexturePresets::default(), Some(buffer));
 
         texture
@@ -178,6 +177,10 @@ impl Texture2D {
 
             gl::BindTexture(gl::TEXTURE_2D, 0)
         }
+    }
+
+    pub fn get_presets(&self) -> TexturePresets {
+        self.presets
     }
 }
 

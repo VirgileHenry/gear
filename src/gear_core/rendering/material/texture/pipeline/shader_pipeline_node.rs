@@ -2,34 +2,47 @@ use std::collections::HashMap;
 use std::iter::Map;
 use std::os::unix::fs::FileTypeExt;
 
-use cgmath::{Matrix4, Vector3, Vector4};
+use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 use gl::types::GLuint;
 
 use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderPipelineNodeInput, ShaderProgram};
 use crate::gear_core::material::texture::{Texture2D, TexturePresets};
+use crate::pipeline::shader_pipeline_node::NodeOutput::{Compute, Render};
 
-pub struct ShaderPipelineNodeParam {
+/// Wrapper used to store the uniforms for a node
+struct ShaderPipelineNodeParam {
     pub ints: HashMap<String, i32>,
     pub floats: HashMap<String, f32>,
+    pub vec2s: HashMap<String, Vector2<f32>>,
     pub vec3s: HashMap<String, Vector3<f32>>,
     pub vec4s: HashMap<String, Vector4<f32>>,
     pub mat4s: HashMap<String, Matrix4<f32>>,
 }
 
-// Shader Pipeline node
+/// A node is either linked to a compute shader or a frag shader
+/// In case of a compute shader multiple textures can be bound to the node
+/// those textures must be named in order to select them
+/// A frag shader has only one output texture and a framebuffer id
+enum NodeOutput {
+    Compute(HashMap<String, Texture2D>),
+    Render(GLuint, Texture2D),
+}
+
 pub struct ShaderPipelineNode {
-    texture: Texture2D,
     shader: ShaderProgram,
     param: ShaderPipelineNodeParam,
+    node_output: NodeOutput, // a node output stores the output textures todo: it also determine this node's type (pas bien ?)
 
-    framebuffer_id: GLuint,
+
+    require_update: bool, // this avoid to recompute a node each time
 }
 
 impl ShaderPipelineNodeParam {
     pub fn new() -> Self {
-        Self{
+        Self {
             ints: Default::default(),
             floats: Default::default(),
+            vec2s: Default::default(),
             vec3s: Default::default(),
             vec4s: Default::default(),
             mat4s: Default::default(),
@@ -39,8 +52,9 @@ impl ShaderPipelineNodeParam {
 
 impl ShaderPipelineNode {
 
-    pub fn new(dimensions: (i32, i32),
-               shader: ShaderProgram) -> Self {
+    /// creates a new node with a fragment shader
+    pub fn new_frag(dimensions: (i32, i32),
+                    shader: ShaderProgram) -> Self {
 
         let texture = Texture2D::new_from_presets(dimensions, TexturePresets::pipeline_default(), None);
 
@@ -66,28 +80,41 @@ impl ShaderPipelineNode {
         }
 
         Self{
-            texture,
             shader,
             param: ShaderPipelineNodeParam::new(),
 
-            framebuffer_id,
+            node_output: Render(framebuffer_id, texture),
+            require_update: true,
         }
     }
 
+    /// creates a new node with a compute shader
+    pub fn new_compute(shader: ShaderProgram) -> Self {
+        Self{
+            shader,
+            param: ShaderPipelineNodeParam::new(),
 
-    pub unsafe fn compute(&self, plane: &MeshRenderer, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, ShaderPipelineNode>) {
+            node_output: Compute(HashMap::new()),
+            require_update: true,
+        }
+    }
 
+    pub unsafe fn render(&self, plane: &MeshRenderer, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, ShaderPipelineNode>) {
 
         // Binding current node framebuffer
-        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer_id);
+        if let Render(framebuffer_id, texture) = self.node_output {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_id);
+            gl::Viewport(0, 0, texture.dimensions.0, texture.dimensions.1);
+        } else {
+            panic!("Render should only be called on a render node");
+        }
 
         // Setting shader parameters
         self.shader.set_used();
 
-        gl::Viewport(0, 0, self.texture.dimensions.0, self.texture.dimensions.1);
 
         let mut current_active_tex = 0;
-        gl::ActiveTexture(gl::TEXTURE0 + current_active_tex);
+        gl::ActiveTexture(gl::TEXTURE0);
 
         // Set up input textures
         match texture_map {
@@ -96,11 +123,11 @@ impl ShaderPipelineNode {
                 self.shader.set_int(name, current_active_tex as i32);
             },
             ShaderPipelineNodeInput::Nodes(nodes) => {
-                for (name, input_node_name) in nodes.into_iter() {
+                for (name, (input_node_name, output_tex_name)) in nodes.into_iter() {
                     let input_node = pipeline_nodes.get(input_node_name).unwrap();
                     // set up input texture
                     gl::ActiveTexture(current_active_tex+gl::TEXTURE0);
-                    input_node.get_texture().bind();
+                    input_node.get_texture(output_tex_name).bind();
                     self.shader.set_int(name, current_active_tex as i32);
                     current_active_tex += 1;
                 }
@@ -111,12 +138,78 @@ impl ShaderPipelineNode {
         self.bind_all_params(&self.shader);
         // Drawing result onto node's texture
         plane.draw(&self.shader);
+
+        //self.require_update = false;
+
+    }
+
+    pub unsafe fn compute(&self, plane: &MeshRenderer, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, ShaderPipelineNode>) {
+
+        // Setting shader parameters
+        self.shader.set_used();
+
+        // binding all output textures
+        if let Compute(output_textures) = &self.node_output {
+            for (name, texture) in output_textures.into_iter() {
+                self.shader.set_image2d(&name, &texture);
+            }
+        }
+
+        let mut current_active_tex = 0;
+        gl::ActiveTexture(gl::TEXTURE0);
+
+        // Set up input textures
+        match texture_map {
+            ShaderPipelineNodeInput::Texture(name, tex) => {
+                tex.bind();
+                self.shader.set_int(name, current_active_tex as i32);
+            },
+            ShaderPipelineNodeInput::Nodes(nodes) => {
+                for (name, (input_node_name, output_tex_name)) in nodes.into_iter() {
+                    let input_node = pipeline_nodes.get(input_node_name).unwrap();
+                    // set up input texture
+                    gl::ActiveTexture(current_active_tex+gl::TEXTURE0);
+                    input_node.get_texture(output_tex_name).bind();
+                    self.shader.set_int(name, current_active_tex as i32);
+                    current_active_tex += 1;
+                }
+            },
+            _ => (),
+        }
+
+        self.bind_all_params(&self.shader);
+        // Drawing result onto node's texture
+        plane.draw(&self.shader);
+
+        //  todo : self.require_update = false;
     }
 
 
-
-    pub fn get_texture(&self) -> Texture2D {
-        self.texture.clone()
+    /// Returns the resulting texture of this node
+    /// An optional name is required to select the output of a compute shader node
+    pub fn get_texture(&self, tex_name: &Option<String>) -> Texture2D {
+        match tex_name {
+            Some(name) => {
+                match &self.node_output {
+                    Compute(textures) => {
+                        textures.get(name)
+                            .expect(format!("The node has no image named {name} bound to it").as_str())
+                            .clone()
+                    }
+                    _ => panic!("Only compute shader node have named textures")
+                }
+            },
+            None => {
+                match self.node_output {
+                    Render(_, texture) => {
+                        texture.clone()
+                    }
+                    Compute(_) => {
+                        panic!("A name is required to access a compute shader texture")
+                    }
+                }
+            },
+        }
     }
 
 
@@ -128,6 +221,10 @@ impl ShaderPipelineNode {
 
     pub fn set_float(&mut self, name: &str, val: f32) {
         self.param.floats.insert(name.parse().unwrap(), val);
+    }
+
+    pub fn set_vec2(&mut self, name: &str, val: Vector2<f32>) {
+        self.param.vec2s.insert(name.parse().unwrap(), val);
     }
 
     pub fn set_vec3(&mut self, name: &str, val: Vector3<f32>) {
@@ -142,19 +239,21 @@ impl ShaderPipelineNode {
         self.param.mat4s.insert(name.parse().unwrap(), val);
     }
 
+    /// Binds all uniforms needed for the node's shader
     pub unsafe fn bind_all_params(&self, shader: &ShaderProgram) {
+
         for (name, val) in &self.param.ints {
             shader.set_int(name, *val);
         }
-
         for (name, val) in &self.param.floats {
             shader.set_float(name, *val);
         }
-
         for (name, val) in &self.param.mat4s {
             shader.set_mat4(name, *val);
         }
-
+        for (name, val) in &self.param.vec2s {
+            shader.set_vec2(name, *val);
+        }
         for (name, val) in &self.param.vec3s {
             shader.set_vec3(name, *val);
         }
