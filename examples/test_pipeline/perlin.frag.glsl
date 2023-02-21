@@ -2,12 +2,11 @@
 
 uniform sampler2D tex;
 uniform float time;
+uniform vec3 offset;
 
 in VS_OUTPUT {
     vec2 UV;
 } IN;
-
-out vec4 Color;
 
 out vec4 FragColor;
 
@@ -26,47 +25,44 @@ float perlin(vec3 coords) {
 
     vec3 smooth_coords = smoothstep(0., 1., coords);
 
-    float val = mix
-    (
-    mix
-    (
-    mix
-    (
-    dot(hash(cube_coords), coords),
-    dot(hash(cube_coords+vec3(1., 0., 0.)), coords-vec3(1., 0., 0.)),
-    smooth_coords.x
-    )
-    ,
-    mix
-    (
-    dot(hash(cube_coords+vec3(0., 1., 0.)), coords-vec3(0., 1., 0.)),
-    dot(hash(cube_coords+vec3(1., 1., 0.)), coords-vec3(1., 1., 0.)),
-    smooth_coords.x
-    )
-    ,
-    smooth_coords.y
-    )
-    ,
-    mix
-    (
-    mix
-    (
-    dot(hash(cube_coords+vec3(0., 0., 1.)), coords-vec3(0., 0., 1.)),
-    dot(hash(cube_coords+vec3(1., 0., 1.)), coords-vec3(1., 0., 1.)),
-    smooth_coords.x
-    )
-    ,
-    mix
-    (
-    dot(hash(cube_coords+vec3(0., 1., 1.)), coords-vec3(0., 1., 1.)),
-    dot(hash(cube_coords+vec3(1., 1., 1.)), coords-vec3(1., 1., 1.)),
-    smooth_coords.x
-    )
-    ,
-    smooth_coords.y
-    )
-    ,
-    smooth_coords.z
+    float val = mix(
+        mix(
+        mix(
+        dot(hash(cube_coords), coords),
+        dot(hash(cube_coords+vec3(1., 0., 0.)), coords-vec3(1., 0., 0.)),
+        smooth_coords.x
+        )
+        ,
+        mix
+        (
+        dot(hash(cube_coords+vec3(0., 1., 0.)), coords-vec3(0., 1., 0.)),
+        dot(hash(cube_coords+vec3(1., 1., 0.)), coords-vec3(1., 1., 0.)),
+        smooth_coords.x
+        )
+        ,
+        smooth_coords.y
+        )
+        ,
+        mix
+        (
+        mix
+        (
+        dot(hash(cube_coords+vec3(0., 0., 1.)), coords-vec3(0., 0., 1.)),
+        dot(hash(cube_coords+vec3(1., 0., 1.)), coords-vec3(1., 0., 1.)),
+        smooth_coords.x
+        )
+        ,
+        mix
+        (
+        dot(hash(cube_coords+vec3(0., 1., 1.)), coords-vec3(0., 1., 1.)),
+        dot(hash(cube_coords+vec3(1., 1., 1.)), coords-vec3(1., 1., 1.)),
+        smooth_coords.x
+        )
+        ,
+        smooth_coords.y
+        )
+        ,
+        smooth_coords.z
     );
 
     return val;
@@ -94,35 +90,16 @@ float turb(vec3 pos) {
     return (1.+sin(.1*pos.y+4.*ridges(pos/20., 1.)))*.5;
 }
 
-vec3 colormap1(float val) {
-    vec3 a = vec3(.65, .0, .0);
-    vec3 b = vec3(.75, .75, .65);
-    vec3 c = vec3(.35, .82, .98);
-    float da = .2;
-    float db = .4;
-    float dc = .1;
-    float wa = .02;
-    float wb = .03;
-    float wc = .001;
-
-    return a * exp(-pow(val-da, 2.)/wa) + b * exp(-pow(val-db, 2.)/wb) + c * exp(-pow(val-dc, 2.)/wc);
-}
-
-vec3 colormap2(float val) {
-    vec3 a = vec3(178., 145., 124.)/256.;
-    vec3 b = vec3(.9, .9, .9)*.7;
-    vec3 c = vec3(.5, .3, .0);
-    float da = 0.5;
-    float db = 1.;
-    float dc = .5;
-    float wa = 10.;
-    float wb = .01;
-    float wc = .1;
-
-    return a * exp(-pow(val-da, 2.)/wa) + b * exp(-pow(val-db, 2.)/wb) + c * exp(-pow(val-dc, 2.)/wc);
-}
 
 void main() {
-    float val = (fractal(vec3(IN.UV*10., time))+1.)*.5;
-    FragColor = vec4(vec3(val), 1.);
+    float mountain_scale = 6.;
+    float terrain_scale = 17.;
+    float terrain_amp = .5;
+
+    vec2 uv = IN.UV + offset.xy;
+
+    float terrain_detail = (fractal(vec3(IN.UV*terrain_scale, time))+1.)*.5*terrain_amp;
+    float mountain = (ridges(vec3(IN.UV*mountain_scale, time), 10.));
+
+    FragColor = vec4(vec3(terrain_detail*mountain+terrain_detail), 1.);
 }

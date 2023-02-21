@@ -1,10 +1,13 @@
-use crate::gear_core::material::texture::TexturePresets;
-use crate::material::texture::Texture2D;
+extern crate cgmath;
+extern crate gl;
+
+use cgmath::{Matrix4, SquareMatrix};
+use cgmath::num_traits::FloatConst;
 use foundry::*;
 use gl::types::{GLint, GLsizei, GLuint};
 
-extern crate cgmath;
-extern crate gl;
+use crate::gear_core::material::texture::TexturePresets;
+use crate::material::texture::Texture2D;
 
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -24,9 +27,12 @@ pub struct CameraComponent {
     color_attachment: Texture2D,
     depth_attachment: Texture2D,
     framebuffer_id: GLuint,
+
+    show_wireframe: bool, // todo : better way to handle camera render options
 }
 
 impl CameraComponent {
+
     fn generate_framebuffer(&mut self) {
         self.framebuffer_id = 0;
         unsafe {
@@ -78,8 +84,7 @@ impl CameraComponent {
         depth_presets.format = gl::DEPTH_COMPONENT;
 
         let mut camera = CameraComponent {
-            perspective_matrix: OPENGL_TO_WGPU_MATRIX
-                * cgmath::perspective(cgmath::Deg(fovy), aspect_ratio, znear, zfar),
+            perspective_matrix: cgmath::perspective(cgmath::Deg(fovy), aspect_ratio, znear, zfar),
             field_of_view_y: fovy,
             znear: znear,
             zfar: zfar,
@@ -96,7 +101,10 @@ impl CameraComponent {
                 None,
             ),
             framebuffer_id: 0,
+
+            show_wireframe: false,
         };
+        println!("{:?}", camera.perspective_matrix);
         camera.generate_framebuffer();
         camera
     }
@@ -154,6 +162,18 @@ impl CameraComponent {
 
     pub fn get_dimensions(&self) -> (i32, i32) {
         self.viewport_dimensions
+    }
+
+    pub fn toggle_show_wireframe(&mut self) {
+        self.show_wireframe = !self.show_wireframe;
+    }
+
+    pub unsafe fn set_render_options(&self) {
+        if (self.show_wireframe) {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        } else {
+            gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+        }
     }
 
 }

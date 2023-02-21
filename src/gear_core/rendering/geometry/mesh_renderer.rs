@@ -1,6 +1,5 @@
-use crate::{Material, Mesh, ShaderProgram, MeshRenderingBuffers};
+use crate::{Material, Mesh, MeshRenderingBuffers, ShaderProgram, Texture2D};
 use crate::opengl::buffers::*;
-
 
 pub struct MeshRenderer {
     pub material: Material,
@@ -41,4 +40,13 @@ impl MeshRenderer {
         gl::ActiveTexture(texture_index);
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }
+
+    pub fn attach_texture(&mut self, texture: Texture2D) {
+        self.material.attach_texture(texture);
+    }
+    pub fn pop_texture(&mut self) -> Option<Texture2D> {
+        self.material.pop_texture();
+        self.material.pop_texture()
+    }
+
 }
