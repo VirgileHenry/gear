@@ -61,7 +61,7 @@ impl GlCamera {
     }
 
     pub unsafe fn set_render_options(&self) {
-        if (self.show_wireframe) {
+        if self.show_wireframe {
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         } else {
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
