@@ -1,4 +1,3 @@
-
 use Gear::*;
 
 fn main() {
@@ -29,13 +28,15 @@ fn main() {
     let mesh = Mesh::sphere(1.0, 40);
     let mesh2 = Mesh::cube(2.0);
 
-    let material = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
-    let mut material2 = Material::from_program("unlitTextureProgram", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)}));
-    material2.attach_texture(Texture2D::load_from("render5.png"));
+    let material = Material::from_program("defaultShader")
+        .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)});
 
-    Texture2D::load_from("minecraft_dirt.png");
-    Texture2D::load_from("minecraft_dirt.png");
-    Texture2D::load_from("minecraft_dirt.png");
+    let mut texture_attachment = TextureAttachmentProp::new();
+    texture_attachment.attach_texture("u_tex_sampler", Texture2D::load_from("render5.png"));
+
+    let mut material2 = Material::from_program("unlitTextureProgram")
+        .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)})
+        .with_property(texture_attachment);
 
     let mesh_renderer = MeshRenderer::new(&mesh, material);
     let mesh_renderer2 = MeshRenderer::new(&mesh2, material2);

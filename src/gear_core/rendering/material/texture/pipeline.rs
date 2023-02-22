@@ -26,7 +26,7 @@ pub struct ShaderPipeline {
 impl ShaderPipeline {
     pub fn new() -> Self {
         let plane_mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
-        let material = Material::from_program("copy_shader", Box::new(NoParamMaterialProperties{})); // todo Brice: ne pas utiliser ca
+        let material = Material::from_program("copy_shader"); // todo Brice: ne pas utiliser ca
         let mesh_renderer = MeshRenderer::new(&plane_mesh, material);
         ShaderPipeline {
             nodes: Default::default(),

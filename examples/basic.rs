@@ -19,8 +19,10 @@ fn main() {
     // create a mesh renderer from the shader program
     let mesh = Mesh::sphere(1.0, 40);
     let mesh2 = Mesh::cube(2.0);
-    let material = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
-    let material2 = Material::from_program("defaultShader", Box::new(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)}));
+    let material = Material::from_program("defaultShader")
+        .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)});
+    let material2 = Material::from_program("defaultShader")
+        .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.4, 0.8, 1.0)});
     let mesh_renderer = MeshRenderer::new(&mesh, material);
     let mesh_renderer2 = MeshRenderer::new(&mesh2, material2);
 

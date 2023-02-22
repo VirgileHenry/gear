@@ -56,9 +56,12 @@ fn main() {
         pipeline.compute("normal");
     }
 
-    let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
+    let mut material = Material::from_program("copyShader");
     unsafe {
-        material.attach_texture(pipeline.get_texture("normal", &None));
+        if let Some(texture_attachment) = material.get_mat_properties::<TextureAttachmentProp>() {
+            texture_attachment.attach_texture("copy_tex", pipeline.get_texture("normal", &None));
+
+        }
     }
     let mesh_renderer = MeshRenderer::new(&mesh, material);
 

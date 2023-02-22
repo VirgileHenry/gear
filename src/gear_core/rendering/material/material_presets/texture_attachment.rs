@@ -8,6 +8,11 @@ pub struct TextureAttachmentProp {
 }
 
 impl TextureAttachmentProp {
+    pub fn new() -> Self {
+        Self{
+            textures: HashMap::new(),
+        }
+    }
     pub fn attach_texture(&mut self, name: &str, texture: Texture2D) {
         self.textures.insert(name.to_string(), texture);
     }
@@ -19,7 +24,7 @@ impl TextureAttachmentProp {
         let mut texture_index_offset = 0;
         for (name, texture) in &self.textures {
             shader.set_int(name, texture_index_offset);
-            gl::ActiveTexture(gl::TEXTURE0 + texture_index_offset);
+            gl::ActiveTexture(gl::TEXTURE0 + texture_index_offset as u32);
             texture.bind();
             texture_index_offset += 1;
         }
@@ -28,7 +33,7 @@ impl TextureAttachmentProp {
 
 impl MaterialProperties for TextureAttachmentProp {
     fn set_properties_to_shader(&self, shader: &ShaderProgram) {
-        unsafe { self.bind_textures(gl::TEXTURE0, shader); }
+        unsafe { self.bind_textures(shader); }
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
