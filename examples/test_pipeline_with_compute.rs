@@ -26,44 +26,34 @@ fn main() {
     /* Pipeline set up */
     let mut pipeline = ShaderPipeline::new();
 
-    pub static PERLIN_FRAG: &str = include_str!("test_pipeline/perlin.frag.glsl");
-    let perlin_shader = ShaderProgram::simple_program(PERLIN_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_render_node("perlin", (1000, 1000), perlin_shader);
-    pipeline.set_float("perlin", "time", 1.0);
+    pub static COMPUTE_PERLIN: &str = include_str!("test_pipeline_with_compute/compute_perlin.comp.glsl");
+    static PERLIN_NODE: &str = "perlin";
+    let mut compute_perlin = ComputeShader::new(COMPUTE_PERLIN, (1000, 1000, 1));
+    compute_perlin.add_read_write_texture("perlin_texture", Texture2D::new_from_presets((1000, 1000), TexturePresets::pipeline_default(), None));
+    compute_perlin.add_write_texture("uv_texture", Texture2D::new_from_presets((1000, 1000), TexturePresets::pipeline_default(), None));
+    pipeline.add_compute_node(PERLIN_NODE, compute_perlin);
+    pipeline.set_float(PERLIN_NODE, "time", 1.0);
 
-    pub static ISLAND_MASK_FRAG: &str = include_str!("test_pipeline/island_mask.frag.glsl");
-    let island_mask_shader = ShaderProgram::simple_program(ISLAND_MASK_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_render_node("island_mask", (1000, 1000), island_mask_shader);
-    pipeline.set_float("island_mask", "global_falloff", 0.8);
-    pipeline.set_float("island_mask", "falloff_speed", 16.0);
-    pipeline.set_vec3("island_mask", "islands", Vector3::<f32>::new(0.5, 0.5, 0.2));
+    pub static COMPUTE_COPY: &str = include_str!("test_pipeline_with_compute/copy.comp.glsl");
+    static COPY_NODE: &str = "copy";
+    let mut compute_copy = ComputeShader::new(COMPUTE_COPY, (1000, 1000, 1));
+    compute_copy.add_write_texture("copy_texture", Texture2D::new_from_presets((1000, 1000), TexturePresets::pipeline_default(), None));
+    pipeline.add_compute_node(COPY_NODE, compute_copy);
 
-    pub static MULTIPLIER_FRAG: &str = include_str!("test_pipeline/multiplier.frag.glsl");
-    let multiplier_shader = ShaderProgram::simple_program(MULTIPLIER_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_render_node("multiplier", (1000, 1000), multiplier_shader);
-    pipeline.link_render_to_node("perlin", "height_map", "multiplier");
-    pipeline.link_render_to_node("island_mask", "mask_tex", "multiplier");
-    pipeline.set_float("multiplier", "a", 0.45);
-    pipeline.set_float("multiplier", "b", 0.505);
-    pipeline.set_int("multiplier", "shape", 8);
-
-    pub static NORMAL_FRAG: &str = include_str!("test_pipeline/computeNormal.frag.glsl");
-    let normal_shader = ShaderProgram::simple_program(NORMAL_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
-    pipeline.add_render_node("normal", (1000, 1000), normal_shader);
-    pipeline.link_render_to_node("multiplier", "heightMap", "normal");
+    pipeline.link_compute_to_node(PERLIN_NODE, "perlin_texture", "copied_texture", COPY_NODE);
 
     unsafe {
-        pipeline.compute("normal");
+        pipeline.compute(COPY_NODE);
     }
 
     let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
     unsafe {
-        material.attach_texture(pipeline.get_texture("normal", None));
+        material.attach_texture(pipeline.get_texture(COPY_NODE, &Some(String::from("copy_texture"))));
     }
     let mesh_renderer = MeshRenderer::new(&mesh, material);
 
-    let timer = TimingSystem{timer:0.0, pipeline};
-    let system = System::new(Box::new(timer), UpdateFrequency::PerFrame);
+    //let timer = TimingSystem{timer:0.0, pipeline};
+    //let system = System::new(Box::new(timer), UpdateFrequency::PerFrame);
 
 
     // assign the renderer to the window
@@ -85,7 +75,7 @@ fn main() {
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 0.0, 1.0)), camera_component);
 
     // start main loop
-    world.register_system(system, 10);
+    //world.register_system(system, 10);
 
     engine.main_loop();
 }
@@ -100,7 +90,6 @@ impl Updatable for TimingSystem {
     fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         self.timer += delta*0.00;
         self.pipeline.set_float("perlin", "time", self.timer);
-        self.pipeline.set_float("island_mask", "time", self.timer);
         unsafe {
             self.pipeline.compute("normal");
         }

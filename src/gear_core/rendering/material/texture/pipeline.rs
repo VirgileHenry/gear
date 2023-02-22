@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 
-use crate::{Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderProgram, Texture2D};
+use crate::{ComputeShader, Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderProgram, Texture2D};
 use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
 
 mod shader_pipeline_node;
@@ -41,8 +41,8 @@ impl ShaderPipeline {
         self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
     }
 
-    pub fn add_compute_node(&mut self, node_name: &str, shader: ShaderProgram, dispatch_dimensions: (u32, u32, u32)) {
-        self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_compute(shader, dispatch_dimensions), true));
+    pub fn add_compute_node(&mut self, node_name: &str, compute_shader: ComputeShader) {
+        self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_compute(compute_shader), true));
         self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
     }
 
@@ -135,7 +135,7 @@ impl ShaderPipeline {
     }
 
     fn get_node_mut(&mut self, node_name: &str) -> &mut ShaderPipelineNode {
-        &mut self.nodes.get_mut(node_name).expect("Trying to access a non existing node").0
+        &mut self.nodes.get_mut(node_name).expect(&*format!("Trying to access a non existing node : {node_name}")).0
     }
 
     fn node_require_update(&self, node_name: &str) -> &bool {
