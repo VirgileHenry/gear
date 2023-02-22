@@ -16,9 +16,8 @@ impl TextureAttachmentProp {
     pub fn attach_texture(&mut self, name: &str, texture: Texture2D) {
         self.textures.insert(name.to_string(), texture);
     }
-    pub fn pop_texture(&mut self, name: &str) -> Texture2D {
+    pub fn remove_texture(&mut self, name: &str) -> Option<Texture2D> {
         self.textures.remove(name)
-            .expect(&*format!("Texture not {name} found"))
     }
     pub unsafe fn bind_textures(&self, shader: &ShaderProgram) {
         let mut texture_index_offset = 0;

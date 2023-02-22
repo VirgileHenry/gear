@@ -11,7 +11,7 @@ fn main() {
         .with_gl_window(None, window_size); // with a window
 
     // create a renderer and give shaders to it
-    let mut renderer = DefaultOpenGlRenderer::new();
+    let mut renderer = DefaultOpenGlRenderer::new(window_size);
     let program = ShaderProgram::simple_program(
         COPY_FRAG_SHADER,
         DEFAULT_VERT_SHADER
@@ -46,7 +46,7 @@ fn main() {
         pipeline.compute(COPY_NODE);
     }
 
-    let mut material = Material::from_program("copyShader", Box::new(NoParamMaterialProperties{}));
+    let mut material = Material::from_program("copyShader");
     unsafe {
         material.attach_texture(pipeline.get_texture(COPY_NODE, &Some(String::from("copy_texture"))));
     }
