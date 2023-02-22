@@ -1,50 +1,36 @@
 
+use std::{collections::HashMap, any::{TypeId, Any}};
+
 // OpenGL dependency !!
-
-use gl::DeleteTextures;
-
-use crate::gear_core::rendering::opengl::color::Color;
 use crate::material::texture::Texture2D;
 
-use super::shaders::{ShaderProgram, ShaderProgramRef};
+use super::shaders::{ShaderProgram};
+
 
 pub struct Material {
     /// shader program to use
     shader_program: String,
     // needs params depending on the program.
-    properties: Box<dyn MaterialProperties>,
-    // textures id
-    textures: Vec<Texture2D>, // todo brice : ça dégage dans les mat prop ça
+    properties: HashMap<TypeId, Box<dyn MaterialProperties>>,
 }
 
 impl Material {
     pub fn from_program(program: &str, properties: Box<dyn MaterialProperties>) -> Material {
         Material {
             shader_program: program.to_string(),
-            properties: properties,
-            textures: Vec::new(),
+            properties: HashMap::new(),
         }
     }
 
-    pub fn attach_texture(&mut self, texture: Texture2D) {
-        self.textures.push(texture);
-    }
-    pub fn pop_texture(&mut self) -> Option<Texture2D> {
-        self.textures.pop()
+    pub fn with_property<T: MaterialProperties + 'static>(mut self, property: T) -> Self {
+        self.properties.insert(property.type_id(), Box::new(property));
+        self
     }
 
-    #[inline]
     pub fn set_properties_to_shader(&self, shader: &ShaderProgram) {
-        self.properties.set_properties_to_shader(shader);
-    }
-
-    pub unsafe fn bind_textures(&self, mut texture_index: u32) -> u32 {
-        for texture in &self.textures {
-            gl::ActiveTexture(texture_index);
-            texture.bind();
-            texture_index += 1;
+        for (_key, property) in self.properties.iter() {
+            property.set_properties_to_shader(shader);
         }
-        texture_index + 1
     }
 
     pub fn get_program_name(&self) -> &str {
@@ -52,7 +38,10 @@ impl Material {
     }
 
     pub fn get_mat_properties<T: 'static>(&mut self) -> Option<&mut T> {
-        self.properties.as_any_mut().downcast_mut()
+        match self.properties.get_mut(&TypeId::of::<T>()) {
+            Some(prop) => prop.as_any_mut().downcast_mut(),
+            None => None,
+        }
     }
 }
 
