@@ -1,7 +1,7 @@
 extern crate cgmath;
 extern crate gl;
 
-#[allow(dead_code)]
+#[repr(C)]
 pub struct Vertex {
     position: cgmath::Vector3::<f32>,
     normal: cgmath::Vector3::<f32>,

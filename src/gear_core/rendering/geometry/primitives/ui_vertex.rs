@@ -1,7 +1,7 @@
 extern crate cgmath;
 extern crate gl;
 
-#[allow(dead_code)]
+#[repr(C)]
 pub struct UIVertex {
     position: cgmath::Vector2::<f32>,
     uv: cgmath::Vector2::<f32>,
