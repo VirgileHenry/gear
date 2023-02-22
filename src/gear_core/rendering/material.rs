@@ -15,7 +15,7 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn from_program(program: &str, properties: Box<dyn MaterialProperties>) -> Material {
+    pub fn from_program(program: &str) -> Material {
         Material {
             shader_program: program.to_string(),
             properties: HashMap::new(),
