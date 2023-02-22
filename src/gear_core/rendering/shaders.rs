@@ -401,6 +401,18 @@ impl ShaderProgram {
             }
         }
     }
+
+    pub fn set_array_int(&self, name: &str, length: i32, val: &Vec<i32>) {
+        unsafe {
+            let c_name = CString::new(name)
+                .unwrap()
+                .into_bytes_with_nul();
+            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
+            if loc != -1 {
+                gl::Uniform1iv(loc, length, &val[0] as *const i32);
+            }
+        }
+    }
 }
 
 impl Drop for ShaderProgram {

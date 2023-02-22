@@ -62,6 +62,28 @@ impl TexturePresets {
             format: gl::RGBA,
         }
     }
+
+    pub fn cs_final() -> Self {
+        Self {
+            wrap_s: gl::CLAMP_TO_EDGE,
+            wrap_t: gl::CLAMP_TO_EDGE,
+            min_filter: gl::LINEAR,
+            mag_filter: gl::LINEAR,
+            internal_format: gl::RGBA32F,
+            format: gl::RGBA,
+        }
+    }
+
+    pub fn cs_default() -> Self {
+        Self {
+            wrap_s: gl::CLAMP_TO_EDGE,
+            wrap_t: gl::CLAMP_TO_EDGE,
+            min_filter: gl::NEAREST,
+            mag_filter: gl::NEAREST,
+            internal_format: gl::RGBA32F,
+            format: gl::RGBA,
+        }
+    }
 }
 
 // todo brice : implémenter drop pour la texture, histoire de libérer les buffers opengl (cf les buffers)

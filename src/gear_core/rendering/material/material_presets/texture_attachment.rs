@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Color, ShaderProgram, Texture2D};
+use crate::{Color, Shader, ShaderProgram, Texture2D};
 use crate::material::MaterialProperties;
 
 pub struct TextureAttachmentProp {
@@ -15,19 +15,20 @@ impl TextureAttachmentProp {
         self.textures.remove(name)
             .expect(&*format!("Texture not {name} found"))
     }
-    pub unsafe fn bind_textures(&self, mut texture_index: u32) -> u32 {
-        for texture in &self.textures {
-            gl::ActiveTexture(texture_index);
+    pub unsafe fn bind_textures(&self, shader: &ShaderProgram) {
+        let mut texture_index_offset = 0;
+        for (name, texture) in &self.textures {
+            shader.set_int(name, texture_index_offset);
+            gl::ActiveTexture(gl::TEXTURE0 + texture_index_offset);
             texture.bind();
-            texture_index += 1;
+            texture_index_offset += 1;
         }
-        texture_index + 1
     }
 }
 
 impl MaterialProperties for TextureAttachmentProp {
     fn set_properties_to_shader(&self, shader: &ShaderProgram) {
-        unsafe { self.bind_textures(gl::TEXTURE0); }
+        unsafe { self.bind_textures(gl::TEXTURE0, shader); }
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
