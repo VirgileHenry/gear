@@ -106,6 +106,7 @@ pub enum EngineMessage {
 pub enum GlWindowMessage {
     SetCursorMode(glfw::CursorMode),
     SetFullScreen(FullScreenModes),
+    ResizeWindow((i32, i32)),
 }
 
 pub use glfw::CursorMode;

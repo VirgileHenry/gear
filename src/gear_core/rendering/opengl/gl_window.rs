@@ -56,7 +56,7 @@ impl GlGameWindow {
 
         let renderer_system = match renderer {
             Some(renderer) => renderer,
-            None => Box::new(DefaultOpenGlRenderer::new()),
+            None => Box::new(DefaultOpenGlRenderer::new(dimensions)),
         };
 
         // some open gl flags
@@ -110,7 +110,6 @@ impl GlGameWindow {
                 for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
                     if cam_comp.is_main() {
                         // resize it
-                        cam_comp.set_aspect_ratio(width as f32 / height as f32);
                         cam_comp.resize_viewport((width, height));
                     }
                 }
@@ -170,6 +169,7 @@ impl GlGameWindow {
                     }
                 },
             },
+            GlWindowMessage::ResizeWindow(dimensions) => self.gl_renderer.set_dimensions(*dimensions), 
         }
     }
 

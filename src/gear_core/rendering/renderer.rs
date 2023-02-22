@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use cgmath::{Matrix3, SquareMatrix, Vector3, Vector4};
 use foundry::*;
-use gl::types::*;
+use gl::{types::*, GUILTY_CONTEXT_RESET};
 
 use crate::{gear_core::{
     geometry::transform::Transform,
@@ -21,6 +21,7 @@ use crate::{COPY_FRAG_SHADER, COPY_VERT_SHADER, Mesh};
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
+    fn set_dimensions(&mut self, dimensions: (i32, i32));
 }
 
 pub struct DefaultOpenGlRenderer {
@@ -30,10 +31,11 @@ pub struct DefaultOpenGlRenderer {
     render_quad: MeshRenderingBuffers,
     copy_shader: ShaderProgram,
     ui_quad: MeshRenderingBuffers,
+    window_dimensions: (i32, i32),
 }
 
 impl DefaultOpenGlRenderer {
-    pub fn new() -> DefaultOpenGlRenderer {
+    pub fn new(window_dimensions: (i32, i32)) -> DefaultOpenGlRenderer {
 
         let copy_shader = ShaderProgram::simple_program(RENDER_FRAG_SHADER, COPY_VERT_SHADER)
             .expect("Error while generating internal (copy) shader");
@@ -48,6 +50,7 @@ impl DefaultOpenGlRenderer {
             render_quad: mesh_renderer,
             copy_shader,
             ui_quad: MeshRenderingBuffers::ui_quad_buffer(),
+            window_dimensions,
         }
     }
 
@@ -61,14 +64,18 @@ impl Renderer for DefaultOpenGlRenderer {
     fn render(&self, components: &mut ComponentTable) {
 
         self.render_scene(components);
-        for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
+        for (camera, cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             if camera.is_main() {
+                let gl_camera = match camera.get_gl_camera() {
+                    Some(gl_cam) => gl_cam,
+                    None => camera.generate_gl_cam(self.window_dimensions)
+                };
                 unsafe {
                     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
                     gl::ActiveTexture(gl::TEXTURE0);
-                    camera.get_color_attachment().bind();
+                    gl_camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
                     self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos()); // todo brice : meme pas besoin
                     self.copy_shader.set_int("tex", 0);
@@ -81,17 +88,26 @@ impl Renderer for DefaultOpenGlRenderer {
 
     }
 
+    fn set_dimensions(&mut self, dimensions: (i32, i32)) {
+        self.window_dimensions = dimensions;
+    }
+
 }
 
 impl DefaultOpenGlRenderer {
     fn render_scene(&self, components: &mut ComponentTable) {
         // found main camera
-        for (camera, cam_transform) in iterate_over_component!(&components; CameraComponent, Transform) {
+        for (camera, cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             // todo: render only if needed
             // todo: render main at the end ?
             // todo: sort once ?
             // sort elements to render by shader to minimise the change of shader program
             let mut rendering_map: HashMap<&str, Vec<(&Transform, &MeshRenderer)>> = HashMap::new();
+
+            let gl_camera = match camera.get_gl_camera() {
+                Some(gl_cam) => gl_cam,
+                None => camera.generate_gl_cam(self.window_dimensions)
+            };
 
             for (transform, mesh) in iterate_over_component!(&components; Transform, MeshRenderer) {
                 match rendering_map.get_mut(&mesh.material.get_program_name()) {
@@ -107,9 +123,9 @@ impl DefaultOpenGlRenderer {
                 gl::CullFace(gl::FRONT);
                 gl::Enable(gl::DEPTH_TEST);
                 gl::DepthFunc(gl::LESS);
-                gl::Viewport(0, 0, camera.get_dimensions().0 as GLsizei, camera.get_dimensions().1 as GLsizei);
-                camera.bind();
-                camera.set_render_options();
+                gl::Viewport(0, 0, gl_camera.get_dimensions().0 as GLsizei, gl_camera.get_dimensions().1 as GLsizei);
+                gl_camera.bind();
+                gl_camera.set_render_options();
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
 
@@ -124,7 +140,7 @@ impl DefaultOpenGlRenderer {
                 current_program.set_used();
                 // set camera uniform
                 current_program.set_mat4("viewMat", view_mat.unwrap());
-                current_program.set_mat4("projectionMat", camera.get_perspective_mat());
+                current_program.set_mat4("projectionMat", gl_camera.get_perspective_mat());
                 current_program.set_vec3("camPos", cam_transform.position());
                 // set main light scene
                 for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
@@ -144,7 +160,7 @@ impl DefaultOpenGlRenderer {
                 }
             }
             unsafe {
-                camera.unbind();
+                gl_camera.unbind();
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
 
             }

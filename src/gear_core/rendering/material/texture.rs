@@ -64,6 +64,7 @@ impl TexturePresets {
     }
 }
 
+// todo brice : implémenter drop pour la texture, histoire de libérer les buffers opengl (cf les buffers)
 #[derive(Copy, Clone)]
 pub struct Texture2D {
     id: u32,

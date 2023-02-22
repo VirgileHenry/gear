@@ -8,7 +8,7 @@ fn main() {
         .with_gl_window(None, window_size); // with a window
 
     // create a renderer and give shaders to it
-    let mut renderer = DefaultOpenGlRenderer::new();
+    let mut renderer = DefaultOpenGlRenderer::new(window_size);
     let program = ShaderProgram::simple_program(
         MONOCHROME_LIT_FRAG_SHADER,
         DEFAULT_VERT_SHADER
@@ -43,7 +43,7 @@ fn main() {
 
     let _sphere = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.8, 0.0)), mesh_renderer);
     let _cube = create_entity!(&mut world.components; Transform::origin(), mesh_renderer2);
-    let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
+    let mut camera_component = CameraComponent::new_perspective_camera(None, 80.0, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
     let sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));

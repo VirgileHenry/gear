@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::iter::Map;
-use std::os::unix::fs::FileTypeExt;
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 use gl::types::GLuint;

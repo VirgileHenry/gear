@@ -11,7 +11,7 @@ fn main() {
         .with_gl_window(None, window_size); // with a window
 
     // create a renderer and give shaders to it
-    let mut renderer = DefaultOpenGlRenderer::new();
+    let mut renderer = DefaultOpenGlRenderer::new(window_size);
     let program = ShaderProgram::simple_program(
         COPY_FRAG_SHADER,
         DEFAULT_VERT_SHADER
@@ -80,7 +80,7 @@ fn main() {
     let world = engine.get_world();
 
     let _plane = create_entity!(&mut world.components; Transform::origin(), mesh_renderer);
-    let mut camera_component = CameraComponent::new_perspective_camera(window_size, 80.0, aspect_ratio, 0.1, 100.0);
+    let mut camera_component = CameraComponent::new_perspective_camera(None, 80.0, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 0.0, 1.0)), camera_component);
 

@@ -8,7 +8,7 @@ fn main() {
         .with_gl_window(None,window_size); // with a window
 
     // create a renderer and give shaders to it
-    let mut renderer = DefaultOpenGlRenderer::new();
+    let mut renderer = DefaultOpenGlRenderer::new(window_size);
     let program = ShaderProgram::simple_program(
         MONOCHROME_LIT_FRAG_SHADER,
         DEFAULT_VERT_SHADER
