@@ -109,6 +109,11 @@ impl Transform {
         self.recompute_world_pos();
     }
 
+    pub fn rotated_around(&mut self, axis: Vector3<f32>, angle: Rad<f32>) {
+        self.rotation = Quaternion::from_axis_angle(axis, angle);
+        self.recompute_world_pos();
+    }
+
     pub fn set_euler(&mut self, rotation: Euler<Rad<f32>>) {
         self.rotation = Quaternion::from(rotation);
         self.recompute_world_pos();
