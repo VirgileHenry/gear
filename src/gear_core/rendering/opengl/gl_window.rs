@@ -105,7 +105,6 @@ impl GlGameWindow {
             }
 
             glfw::WindowEvent::Size(width, height) => {
-
                 // camera resize
                 for cam_comp in iterate_over_component_mut!(components; CameraComponent) {
                     if cam_comp.is_main() {
@@ -116,12 +115,21 @@ impl GlGameWindow {
 
                 // recompute ui positions !
                 for ui_transform in iterate_over_component_mut!(components; UITransform) {
-                    ui_transform.recompute_screen_pos(width, height);
+                    // ui_transform.recompute_screen_pos((width, height)); // to costly as resize comes in many calls
+                    ui_transform.invalidate_screen_pos();
                 }
+
+                // finally, let's tell the engine the window resized !
+                *engine_message = EngineMessage::GlWindowMessage(GlWindowMessage::ResizeWindow((width, height)));
+
+                // todo : continuous resize don't freeze the whole app !
+                // actually, the glfw poll_event function waits for end resize.
+                // Might want to move it to another thread, and fetch events from that thread ! 
             }
 
             glfw::WindowEvent::Key(code, _, _, _) => {
                 if code == glfw::Key::Escape {
+                    // todo : let's not do that in release...
                     *engine_message = EngineMessage::StopEngine;
                 }
             }
