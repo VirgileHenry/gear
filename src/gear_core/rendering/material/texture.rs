@@ -196,7 +196,7 @@ impl Texture2D {
                     );
                 }
             }
-            gl::GenerateMipmap(gl::TEXTURE_2D);
+            gl::GenerateMipmap(gl::TEXTURE_2D); // TODO brice: faut-il le faire
 
             gl::BindTexture(gl::TEXTURE_2D, 0)
         }

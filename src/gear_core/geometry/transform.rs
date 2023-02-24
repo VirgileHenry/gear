@@ -1,4 +1,5 @@
 use cgmath::*;
+
 #[allow(dead_code)]
 pub struct Transform {
     position: Vector3<f32>,
@@ -69,6 +70,11 @@ impl Transform {
 
     pub fn rotate_around(&mut self, axis: Vector3<f32>, angle: Rad<f32>) {
         self.rotation = self.rotation * Quaternion::from_axis_angle(axis, angle);
+        self.recompute_world_pos();
+    }
+
+    pub fn rotated_around(&mut self, axis: Vector3<f32>, angle: Rad<f32>) {
+        self.rotation = Quaternion::from_axis_angle(axis, angle);
         self.recompute_world_pos();
     }
 
