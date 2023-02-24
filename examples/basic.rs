@@ -28,11 +28,9 @@ fn main() {
 
 
     // assign the renderer to the window
-    let mut aspect_ratio = 1.0;
     match engine.get_gl_window_mut() {
         Some(window) => {
             window.set_new_renderer(Box::new(renderer));
-            aspect_ratio = window.aspect_ratio();
         },
         None => {},
     }

@@ -172,9 +172,9 @@ impl DefaultOpenGlRenderer {
 
     fn render_ui(&self, components: &mut ComponentTable) {
 
-        let mut rendering_map: HashMap<&str, Vec<(&UITransform, &UIRenderer)>> = HashMap::new();
+        let mut rendering_map: HashMap<&str, Vec<(&mut UITransform, &UIRenderer)>> = HashMap::new();
 
-        for (ui_transform, ui_renderer) in iterate_over_component!(&components; UITransform, UIRenderer) {
+        for (ui_transform, ui_renderer) in iterate_over_component_mut!(&components; UITransform, UIRenderer) {
             match rendering_map.get_mut(&ui_renderer.material_name()) {
                 Some(vec) => vec.push((ui_transform, ui_renderer)),
                 None => {rendering_map.insert(ui_renderer.material_name(), vec![(ui_transform, ui_renderer)]);},
@@ -193,17 +193,16 @@ impl DefaultOpenGlRenderer {
             current_program.set_used();
             for (transform, renderer) in vec.into_iter() {
                 // set model uniform
-                match transform.screen_pos() {
-                    Some(matrix) => {
-                        current_program.set_mat3("modelMat", matrix);
-                        unsafe {
-                            renderer.set_mat_to_shader(&current_program);
-                            self.ui_quad.draw();
-                        }
-                    }
-                    None => {}
+                let ui_tf_matrix = match transform.screen_pos() {
+                    Some(matrix) => matrix,
+                    None => transform.recompute_screen_pos(self.window_dimensions),
+                };
+                current_program.set_mat3("modelMat", ui_tf_matrix);
+                current_program.set_int("layer", transform.layer() as i32);
+                unsafe {
+                    renderer.set_mat_to_shader(&current_program);
+                    self.ui_quad.draw();
                 }
-
             }
         }
 

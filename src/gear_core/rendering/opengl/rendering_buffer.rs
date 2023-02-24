@@ -51,10 +51,10 @@ impl MeshRenderingBuffers {
     pub fn ui_quad_buffer() -> MeshRenderingBuffers {
 
         let vertices = vec![
-            UIVertex::new(0., 0., 0., 0., 0),
-            UIVertex::new(1., 0., 0., 0., 0),
-            UIVertex::new(1., 1., 0., 0., 0),
-            UIVertex::new(0., 1., 0., 0., 0),
+            UIVertex::new(0., 0., 0., 0.),
+            UIVertex::new(0., 1., 0., 1.),
+            UIVertex::new(1., 1., 1., 1.),
+            UIVertex::new(1., 0., 1., 0.),
         ];
         let triangles = vec![
             0, 1, 2,
