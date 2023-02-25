@@ -12,3 +12,4 @@ gl = "0.14.0"
 cgmath = "0.18.0"
 image = "0.24.4"
 gear-macros-derive = { path = "./deps/gear-macros-derive" }
+refbox = "0.3.0"
