@@ -196,7 +196,6 @@ impl Texture2D {
                     );
                 }
             }
-            gl::GenerateMipmap(gl::TEXTURE_2D); // TODO brice: faut-il le faire
 
             gl::BindTexture(gl::TEXTURE_2D, 0)
         }
@@ -204,6 +203,13 @@ impl Texture2D {
 
     pub fn get_presets(&self) -> TexturePresets {
         self.presets
+    }
+
+    pub unsafe fn generate_mipmap(&self) {
+        gl::BindTexture(gl::TEXTURE_2D, self.id);
+        gl::GenerateMipmap(gl::TEXTURE_2D); // TODO brice: faut-il le faire
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+
     }
 }
 

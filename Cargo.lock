@@ -12,6 +12,7 @@ dependencies = [
  "gl",
  "glfw",
  "image",
+ "refbox",
 ]
 
 [[package]]
@@ -579,6 +580,12 @@ dependencies = [
  "crossbeam-utils",
  "num_cpus",
 ]
+
+[[package]]
+name = "refbox"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f08135c66c2beb6cd5c9e3286daae2bd88393a830e69b432e2e5a5b52e5170d"
 
 [[package]]
 name = "scoped_threadpool"
