@@ -9,5 +9,4 @@ pub use engine::*;
 pub use events::*;
 pub use rendering::*;
 pub use geometry::*;
-pub use resources::*;
 pub use ui::*;

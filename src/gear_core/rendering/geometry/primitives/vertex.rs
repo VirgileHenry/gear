@@ -1,3 +1,7 @@
+use std::array::TryFromSliceError;
+
+use cgmath::Vector3;
+
 extern crate cgmath;
 extern crate gl;
 
@@ -17,6 +21,21 @@ impl Vertex {
             uv: cgmath::Vector2 { x: u, y: v }
         }
     }
+
+    pub fn load(data: &[u8]) -> Result<Vertex, TryFromSliceError> {
+        let size = std::mem::size_of::<f32>();
+        Ok(Vertex::new(
+            f32::from_ne_bytes(data[0..size].try_into()?),
+            f32::from_ne_bytes(data[size..2*size].try_into()?),
+            f32::from_ne_bytes(data[2*size..3*size].try_into()?),
+            f32::from_ne_bytes(data[3*size..4*size].try_into()?),
+            f32::from_ne_bytes(data[4*size..5*size].try_into()?),
+            f32::from_ne_bytes(data[5*size..6*size].try_into()?),
+            f32::from_ne_bytes(data[6*size..7*size].try_into()?),
+            f32::from_ne_bytes(data[7*size..8*size].try_into()?),
+        ))
+    }
+
 
     pub fn vertex_attrib_pointer() {
         // in here because this depends on the vertex data type !
