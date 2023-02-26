@@ -138,7 +138,7 @@ impl Texture2D {
     }
 
     pub unsafe fn unbind(&self) {
-        gl::BindTexture(gl::TEXTURE_2D, self.id);
+        gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
     pub fn resize(&mut self, dimensions: (i32, i32)) {
