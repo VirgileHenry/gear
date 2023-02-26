@@ -1,4 +1,4 @@
-use Gear::*;
+use gear::*;
 
 fn main() {
     let window_size = (1200, 800);

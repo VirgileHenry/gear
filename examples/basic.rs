@@ -1,4 +1,4 @@
-use Gear::*;
+use gear::*;
 
 fn main() {
     let window_size = (1200, 800);
@@ -46,7 +46,7 @@ fn main() {
     let mut camera_component = CameraComponent::new_perspective_camera(None, 80.0, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
-    let sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let _sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
     
     // world.set_entity_active(sun, false);
 

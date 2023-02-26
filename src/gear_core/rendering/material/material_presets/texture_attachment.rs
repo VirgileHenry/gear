@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Color, Shader, ShaderProgram, Texture2D};
+use crate::{ShaderProgram, Texture2D};
 use crate::material::MaterialProperties;
 
 pub struct TextureAttachmentProp {

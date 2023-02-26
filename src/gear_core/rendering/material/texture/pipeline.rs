@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 
-use crate::{ComputeShader, Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderProgram, Texture2D};
+use crate::{ComputeShader, Material, Mesh, MeshRenderer, ShaderProgram, Texture2D};
 use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
 
 mod shader_pipeline_node;
@@ -111,18 +111,16 @@ impl ShaderPipeline {
             input => { self.links.insert(shader_node_name.parse().unwrap(), input); }
         }
 
-        let mut require_update = self.node_require_update_mut(shader_node_name);
+        let require_update = self.node_require_update_mut(shader_node_name);
         if !should_recompute && !*require_update {
             return false;
         }
-        unsafe {
-            *require_update = false;
-            self.get_node(shader_node_name).execute(
-                &self.mesh_renderer,
-                self.links.get(shader_node_name).expect(&*format!("no link found for {}", shader_node_name)),
-                &self.nodes
-            );
-        }
+        *require_update = false;
+        self.get_node(shader_node_name).execute(
+            &self.mesh_renderer,
+            self.links.get(shader_node_name).expect(&*format!("no link found for {}", shader_node_name)),
+            &self.nodes
+        );
         true
     }
 
@@ -138,6 +136,7 @@ impl ShaderPipeline {
         &mut self.nodes.get_mut(node_name).expect(&*format!("Trying to access a non existing node : {node_name}")).0
     }
 
+    #[allow(dead_code)]
     fn node_require_update(&self, node_name: &str) -> &bool {
         &self.nodes.get(node_name).expect("Trying to access a non existing node").1
     }

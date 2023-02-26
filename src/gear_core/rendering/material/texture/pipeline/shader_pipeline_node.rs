@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::iter::Map;
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 use gl::types::GLuint;
 
-use crate::{ComputeShader, Material, Mesh, MeshRenderer, NoParamMaterialProperties, ShaderPipelineNodeInput, ShaderProgram};
+use crate::{ComputeShader, MeshRenderer, ShaderPipelineNodeInput, ShaderProgram};
 use crate::gear_core::material::texture::{Texture2D, TexturePresets};
 use crate::pipeline::shader_pipeline_node::NodeType::{Compute, Render};
 

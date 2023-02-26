@@ -3,10 +3,8 @@ extern crate gl;
 
 
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
-use std::fs;
 
-use gl::types::{GLsizei, GLuint};
+use gl::types::{GLuint};
 
 use crate::{ShaderProgram, Texture2D};
 

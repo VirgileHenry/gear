@@ -2,17 +2,17 @@ use std::{
     collections::HashMap,
     net::{
         UdpSocket, TcpStream, TcpListener, SocketAddr,
-    }, marker::PhantomData, io::{Write},
+    },
+    io::{Write},
 };
 
 use foundry::*;
 
 use crate::NetworkSerializable;
 
-use super::{packet::Packet, buffer::NetworkBuffer, client};
+use super::{packet::Packet, buffer::NetworkBuffer};
 
 /// Server system. When created, will start to listen tcp connections and create Connection when receiving them.
-/// E is the message enum
 /// H is the server handler
 pub struct Server<H: ServerHandler> {
     server_handler: H,
@@ -22,7 +22,6 @@ pub struct Server<H: ServerHandler> {
     next_available_id: usize,
     tcp_listener: TcpListener,
 }
-
 
 impl<H: ServerHandler> Server<H> {
     pub fn new(server_handler: H, port: usize, max_client_count: usize) -> Result<Server<H>, String> {
@@ -45,7 +44,7 @@ impl<H: ServerHandler> Server<H> {
         })
     }
 
-    pub fn handle_incoming_connection(&mut self, stream: TcpStream, adress: SocketAddr, components: &mut ComponentTable) -> Vec<ServerReturnMessage<H::ServerMessages>>{
+    pub fn handle_incoming_connection(&mut self, stream: TcpStream, adress: SocketAddr, components: &mut ComponentTable) -> Vec<ServerMessage<H::ServerMessages>>{
         println!("[NETWORK SERVER] -> incoming connection : {adress}.");
         if self.current_client_count < self.max_client_count {
             println!("[NETWORK SERVER] -> accepted connection as Connection {}.", self.next_available_id);
@@ -69,78 +68,84 @@ impl<H: ServerHandler> Server<H> {
         }
     }
 
-    pub fn send_tcp_to_client(&mut self, to: usize, message: H::ServerMessages) {
+    /// Disconnect the given client.
+    fn disconnect_client(&mut self, client: usize, components: &mut ComponentTable) {
+        match self.connections.remove(&client) {
+            Some(_) => println!("[SERVER] -> Disconnected client {client}."),
+            None => println!("[SERVER] -> Unable to disconnect client {client} : not registered."),
+        }
+        self.server_handler.on_client_disconnected(client, components);
+    }
+
+    pub fn send_tcp_to_client(&mut self, to: usize, message: H::ServerMessages, components: &mut ComponentTable) {
         let packet = Packet::from(message);
         match self.connections.get_mut(&to) {
             Some(client) => {
                 match client.tcp_connection.write(&packet.as_bytes()) {
                     Ok(_amount_written) => {/* all good */}, // todo : check amount written is enough, or re-write
-                    Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}") // todo : disconnect the client ?
+                    Err(e) => {
+                        println!("[NETWORK SERVER] -> Error while sending data to client {to} ({e}). Disconnecting client.");
+                        self.disconnect_client(to, components);
+                    },
                 };
             },
             None => println!("[NETWORK SERVER] -> Attempted to send packet to Connection {to} but Connection was not found."),
         };
     }
 
-    pub fn send_tcp_to_all(&mut self, message: H::ServerMessages) {
+    pub fn send_tcp_to_all(&mut self, message: H::ServerMessages, components: &mut ComponentTable) {
+        // this gets a little tricky :
+        // as if connections fail, we have to disconnect the client, use retain method to loop through all values
+        // and use the retain closure to send messages, and if fail, do not retain the connection
         let packet = Packet::from(message);
-        for (_id, connection) in self.connections.iter_mut() {
+        self.connections.retain(|id, connection| {
             match connection.tcp_connection.write(&packet.as_new_bytes()) {
-                Ok(_amount_written) => {/* all good */},
-                Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}")
-            };
-        }
+                Ok(_amount_written) => true, // all good
+                Err(e) => {
+                    println!("[NETWORK SERVER] -> Error while sending data to client {id} ({e}). Disconnecting client.");
+                    self.server_handler.on_client_disconnected(*id, components);
+                    false // don't retain connection
+                },
+            }
+        });
     }
 
-    pub fn send_tcp_to_all_except(&mut self, except: usize, message: H::ServerMessages) {
+    pub fn send_tcp_to_all_except(&mut self, except: usize, message: H::ServerMessages, components: &mut ComponentTable) {
+        // this gets a little tricky :
+        // as if connections fail, we have to disconnect the client, use retain method to loop through all values
+        // and use the retain closure to send messages, and if fail, do not retain the connection
         let packet = Packet::from(message);
-        for (id, connection) in self.connections.iter_mut() {
-            if *id == except {continue;}
-            match connection.tcp_connection.write(&packet.as_new_bytes()) {
-                Ok(_amount_written) => {/* all good */},
-                Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}")
-            };
-        }
+        self.connections.retain(|id, connection| {
+            match *id == except {
+                true => true, // if it's the id of the skipped client, don't send data and retain
+                false => match connection.tcp_connection.write(&packet.as_new_bytes()) {
+                    Ok(_amount_written) => true, // all good
+                    Err(e) => {
+                        println!("[NETWORK SERVER] -> Error while sending data to client {id} ({e}). Disconnecting client.");
+                        self.server_handler.on_client_disconnected(*id, components);
+                        false // don't retain conenction
+                    },
+                }
+            }
+        });
     }
 
-    pub fn send_udp_to_client(&mut self, to: usize, message: H::ServerMessages) {
-        let packet = Packet::from(message);
-        match self.connections.get_mut(&to) {
-            Some(client) => {
-                match client.udp_connection.send(&packet.as_bytes()) {
-                    Ok(_amount_written) => {/* all good */}, // todo : check amount written is enough, or re-write
-                    Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}") // todo : disconnect the client ?
-                };
-            },
-            None => println!("[NETWORK SERVER] -> Attempted to send packet to Connection {to} but Connection was not found."),
-        };
+    pub fn send_udp_to_client(&mut self, _to: usize, _message: H::ServerMessages, _components: &mut ComponentTable) {
+        unimplemented!()
     }
 
-    pub fn send_udp_to_all(&mut self, message: H::ServerMessages) {
-        let packet = Packet::from(message);
-        for (_id, connection) in self.connections.iter_mut() {
-            match connection.udp_connection.send(&packet.as_new_bytes()) {
-                Ok(_amount_written) => {/* all good */},
-                Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}")
-            };
-        }
+    pub fn send_udp_to_all(&mut self, _message: H::ServerMessages, _components: &mut ComponentTable) {
+        unimplemented!()
     }
 
-    pub fn send_udp_to_all_except(&mut self, except: usize, message: H::ServerMessages) {
-        let packet = Packet::from(message);
-        for (id, connection) in self.connections.iter_mut() {
-            if *id == except {continue;}
-            match connection.udp_connection.send(&packet.as_new_bytes()) {
-                Ok(_amount_written) => {/* all good */},
-                Err(e) => println!("[NETWORK SERVER] -> Error while sending data : {e}")
-            };
-        }
+    pub fn send_udp_to_all_except(&mut self, _except: usize, _message: H::ServerMessages, _components: &mut ComponentTable) {
+        unimplemented!()
     }
 
 }
 
 impl<H: ServerHandler + 'static> Updatable for Server<H> {
-    fn update(&mut self, components: &mut ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         
         // create a vec of any incoming messages to send
         let mut to_send_messages = Vec::new();
@@ -183,9 +188,9 @@ impl<H: ServerHandler + 'static> Updatable for Server<H> {
         // send all messages we got from our diverse calls
         for return_message in to_send_messages {
             match return_message {
-                ServerReturnMessage::TcpToClient(client_id, message) => self.send_tcp_to_client(client_id, message),
-                ServerReturnMessage::TcpToAll(message) => self.send_tcp_to_all(message),
-                ServerReturnMessage::TcpToExcept(except_id, message) => self.send_tcp_to_all_except(except_id, message),
+                ServerMessage::TcpToClient(client_id, message) => self.send_tcp_to_client(client_id, message, components),
+                ServerMessage::TcpToAll(message) => self.send_tcp_to_all(message, components),
+                ServerMessage::TcpToExcept(except_id, message) => self.send_tcp_to_all_except(except_id, message, components),
                 _ => {},
             }
         }
@@ -201,7 +206,7 @@ impl<H: ServerHandler + 'static> Updatable for Server<H> {
     }
 }
 
-pub enum ServerReturnMessage<E: NetworkSerializable> {
+pub enum ServerMessage<E: NetworkSerializable> {
     TcpToClient(usize, E),
     TcpToAll(E),
     TcpToExcept(usize, E),
@@ -213,34 +218,40 @@ pub enum ServerReturnMessage<E: NetworkSerializable> {
 pub trait ServerHandler where Self: Sized {
     type ServerMessages: NetworkSerializable;
     type ClientsMessages: NetworkSerializable;
-    fn on_client_connected(&mut self, client: usize, components: &mut ComponentTable) -> Vec<ServerReturnMessage<Self::ServerMessages>>;
-    fn on_client_disconnected(&mut self, client: usize, components: &mut ComponentTable) -> Vec<ServerReturnMessage<Self::ServerMessages>>;
-    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<ServerReturnMessage<Self::ServerMessages>>;
-    fn handle_tcp_message(&mut self, client: usize, message: Self::ClientsMessages, components: &mut ComponentTable) -> Vec<ServerReturnMessage<Self::ServerMessages>>;
+    fn on_client_connected(&mut self, client: usize, components: &mut ComponentTable) -> Vec<ServerMessage<Self::ServerMessages>>;
+    fn on_client_disconnected(&mut self, client: usize, components: &mut ComponentTable) -> Vec<ServerMessage<Self::ServerMessages>>;
+    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<ServerMessage<Self::ServerMessages>>;
+    fn handle_tcp_message(&mut self, client: usize, message: Self::ClientsMessages, components: &mut ComponentTable) -> Vec<ServerMessage<Self::ServerMessages>>;
 }
 
 
-/// Server representation of a Connection
+/// Server representation of a Client
 pub struct Connection {
     id: usize,
     tcp_connection: TcpStream,
-    udp_connection: UdpSocket,
+    _udp_connection: UdpSocket,
     incoming_packet: Option<Packet>,
     buffer: NetworkBuffer,
 }
 
 impl Connection {
     pub fn new(id: usize, tcp_connection: TcpStream) -> Result<Connection, std::io::Error> {
+        let udp = UdpSocket::bind(tcp_connection.local_addr()?)?;
+        udp.connect(tcp_connection.peer_addr()?)?;
         Ok(Connection { 
             id: id,
-            udp_connection: UdpSocket::bind(tcp_connection.peer_addr()?)?,
             tcp_connection,
+            _udp_connection: udp,
             incoming_packet: None,
             buffer: NetworkBuffer::new(),
         })
     }
 
     pub fn get_incoming_packets(&mut self) -> Result<Vec<Packet>, std::io::Error> {
+        self.get_incoming_udp()
+    }
+
+    fn get_incoming_udp(&mut self) -> Result<Vec<Packet>, std::io::Error> {
         // start by reading if there are any incoming data
         if self.buffer.read_tcp(&mut self.tcp_connection)? {
             // let's read !

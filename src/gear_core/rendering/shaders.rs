@@ -2,7 +2,7 @@ extern crate cgmath;
 extern crate gl;
 
 
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::fs;
 
 pub use compute_shader::*;

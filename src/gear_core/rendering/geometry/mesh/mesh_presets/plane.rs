@@ -7,17 +7,17 @@ impl Mesh {
     /// The length of each side of the plane is proportional to the length of the two axes.
     /// If the axes are orthonormal, the plane is a unit square.
     /// The normal of the plane has the same orientation as the cross product of A with B.
-    pub fn plane(axisA: Vector3<f32>, axisB: Vector3<f32>) -> Mesh {
+    pub fn plane(axis_a: Vector3<f32>, axis_b: Vector3<f32>) -> Mesh {
 
         // set each corner vertex of the plane
         let corners = vec![
-            -0.5*axisA - 0.5*axisB,
-            -0.5*axisA + 0.5*axisB,
-            0.5*axisA + 0.5*axisB,
-            0.5*axisA - 0.5*axisB,
+            -0.5*axis_a - 0.5*axis_b,
+            -0.5*axis_a + 0.5*axis_b,
+            0.5*axis_a + 0.5*axis_b,
+            0.5*axis_a - 0.5*axis_b,
         ];
 
-        let normal = Vector3::normalize(axisA.cross(axisB));
+        let normal = Vector3::normalize(axis_a.cross(axis_b));
 
         let vertices = vec![
             Vertex::new(corners[0].x, corners[0].y, corners[0].z, normal.x, normal.y, normal.z, 0., 0.),

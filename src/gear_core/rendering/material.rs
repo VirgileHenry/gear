@@ -1,9 +1,6 @@
 
 use std::{collections::HashMap, any::{TypeId, Any}};
 
-// OpenGL dependency !!
-use crate::material::texture::Texture2D;
-
 use super::shaders::{ShaderProgram};
 
 

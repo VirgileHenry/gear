@@ -1,9 +1,7 @@
 use crate::gear_core::*;
 use foundry::*;
-use gl::CLAMP_READ_COLOR;
-use glfw::{Context, Glfw, InitError, Window, WindowEvent, WindowHint};
+use glfw::{Context, Glfw, InitError, Window, WindowEvent};
 use std::{any::Any, sync::mpsc::Receiver};
-use glfw::ffi::glfwSetWindowSizeCallback;
 
 pub struct GlGameWindow {
     glfw: Glfw,

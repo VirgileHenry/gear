@@ -1,20 +1,20 @@
 extern crate cgmath;
 extern crate gl;
 
-use cgmath::{Matrix4, SquareMatrix};
-use cgmath::num_traits::FloatConst;
 use foundry::*;
-use gl::types::{GLint, GLsizei, GLuint};
+use gl::types::GLuint;
 
 use crate::gear_core::material::texture::TexturePresets;
 use crate::material::texture::Texture2D;
 
+/*
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
     0.0, 0.0, 0.5, 0.0,
     0.0, 0.0, 0.5, 1.0,
 );
+*/
 
 pub struct CameraComponent {
     field_of_view_y: f32,
@@ -79,8 +79,8 @@ impl CameraComponent {
     pub fn generate_gl_cam(&mut self, dimensions: (i32, i32)) -> &GlCamera {
 
         let mut id = 0;
-        let mut color_text = Texture2D::new_from_presets(dimensions, TexturePresets::color_default(), None);
-        let mut depth_text = Texture2D::new_from_presets(dimensions, TexturePresets::depth_default(), None);
+        let color_text = Texture2D::new_from_presets(dimensions, TexturePresets::color_default(), None);
+        let depth_text = Texture2D::new_from_presets(dimensions, TexturePresets::depth_default(), None);
 
         unsafe {
             gl::Viewport(0, 0, dimensions.0, dimensions.1);

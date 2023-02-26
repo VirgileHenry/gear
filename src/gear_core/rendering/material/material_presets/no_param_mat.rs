@@ -1,11 +1,11 @@
-use crate::{Color, ShaderProgram};
+use crate::ShaderProgram;
 use crate::material::MaterialProperties;
 
 /// Defines a material that has no parameters to pass to it's associated shader
 pub struct NoParamMaterialProperties {}
 
 impl MaterialProperties for NoParamMaterialProperties {
-    fn set_properties_to_shader(&self, shader: &ShaderProgram) {}
+    fn set_properties_to_shader(&self, _shader: &ShaderProgram) {}
 
     fn as_any(&self) -> &dyn std::any::Any {
         self

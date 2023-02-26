@@ -1,6 +1,5 @@
 use std::ffi::c_void;
 
-use cgmath::num_traits::clamp;
 use gl::types::{GLenum, GLint};
 use image::RgbaImage;
 
@@ -151,7 +150,6 @@ impl Texture2D {
         &self,
         initial_value: Option<RgbaImage>,
     ) {
-        let mut id = 0;
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
             // set the texture wrapping/filtering options (on the currently bound texture object)

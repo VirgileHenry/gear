@@ -11,7 +11,7 @@ pub fn ui_event_manager() -> EventListener {
     let mut result = EventListener::new();
 
     // create a callback on window events to trigger ui elements
-    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, entity, components, engine_message| {
+    result.listen(EngineEventTypes::WindowEvent, Box::new(|event, _entity, components, engine_message| {
         match event {
             EngineEvents::WindowEvent(window_event) => {
                 match window_event {
@@ -79,7 +79,7 @@ pub fn ui_event_manager() -> EventListener {
         }
     }));
 
-    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, entity, components, engine_message| {
+    result.listen(EngineEventTypes::MousePosEvent, Box::new(|event, _entity, components, engine_message| {
         match event {
             EngineEvents::MousePosEvent(x, y) => {
                 // buttons

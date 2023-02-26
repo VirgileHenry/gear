@@ -1,5 +1,4 @@
-use crate::{Material, Mesh, MeshRenderingBuffers, ShaderProgram, Texture2D};
-use crate::opengl::buffers::*;
+use crate::{Material, Mesh, MeshRenderingBuffers, ShaderProgram};
 
 pub struct MeshRenderer {
     pub material: Material,

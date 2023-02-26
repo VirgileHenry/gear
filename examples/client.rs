@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use Gear::*;
+use gear::*;
 use cgmath::Vector3;
 use gear_macros_derive::{NetworkSerializable};
 

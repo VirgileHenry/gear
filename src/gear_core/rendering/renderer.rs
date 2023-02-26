@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use cgmath::{Matrix3, SquareMatrix, Vector3, Vector4};
+use cgmath::{SquareMatrix, Vector3, Vector4};
 use foundry::*;
-use gl::{types::*, GUILTY_CONTEXT_RESET};
+use gl::types::*;
 
 use crate::{gear_core::{
     geometry::transform::Transform,
@@ -17,7 +17,7 @@ use crate::{gear_core::{
         UITransform
     },
 }, MeshRenderingBuffers, RENDER_FRAG_SHADER};
-use crate::{COPY_FRAG_SHADER, COPY_VERT_SHADER, Mesh};
+use crate::{COPY_VERT_SHADER, Mesh};
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -64,7 +64,7 @@ impl Renderer for DefaultOpenGlRenderer {
     fn render(&self, components: &mut ComponentTable) {
 
         self.render_scene(components);
-        for (camera, cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
+        for (camera, _cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             if camera.is_main() {
                 let gl_camera = match camera.get_gl_camera() {
                     Some(gl_cam) => gl_cam,
@@ -77,7 +77,7 @@ impl Renderer for DefaultOpenGlRenderer {
                     gl::ActiveTexture(gl::TEXTURE0);
                     gl_camera.get_color_attachment().bind();
                     self.copy_shader.set_used();
-                    self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos()); // todo brice : meme pas besoin
+                    self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos());
                     self.copy_shader.set_int("tex", 0);
                     self.render_quad.bind();
                     self.render_quad.draw();

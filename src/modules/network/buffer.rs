@@ -38,7 +38,10 @@ impl NetworkBuffer {
     /// If false is returned, the buffer is empty
     pub fn try_complete_packet(&mut self, packet: &mut Packet) -> bool {
         let read_amount = std::cmp::min(packet.awaiting_size(), self.remaining_data_size);
-        packet.push_data(&mut self.buffer[self.read_pointer..self.read_pointer + read_amount].to_vec()); // todo : handle error
+        match packet.push_data(&mut self.buffer[self.read_pointer..self.read_pointer + read_amount].to_vec()) {
+            Ok(_packet_finished) => { /* all good */},
+            Err(_e) => { /* todo : error handling */} // todo : better way
+        }
         self.read_pointer += read_amount;
         self.remaining_data_size -= read_amount;
         packet.awaiting_size() == 0

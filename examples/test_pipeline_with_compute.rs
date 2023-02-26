@@ -1,7 +1,7 @@
 use gl::TEXTURE_2D;
 use glfw::ffi::glfwGetTime;
 
-use Gear::*;
+use gear::*;
 
 fn main() {
     let window_size = (1200, 800);

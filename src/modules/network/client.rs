@@ -1,4 +1,4 @@
-use std::{net::{TcpStream, UdpSocket, SocketAddr}, time::Duration, thread::{JoinHandle, sleep_ms}, marker::PhantomData, io::Write};
+use std::{net::{TcpStream, UdpSocket, SocketAddr}, thread::JoinHandle, io::Write};
 use std::thread;
 
 use foundry::*;
@@ -127,7 +127,7 @@ impl<H: ClientHandler> Client<H> {
 }
 
 impl<H: ClientHandler + 'static> Updatable for Client<H> {
-    fn update(&mut self, components: &mut ComponentTable, delta: f32, user_data: &mut dyn std::any::Any) {
+    fn update(&mut self, components: &mut ComponentTable, delta: f32, _user_data: &mut dyn std::any::Any) {
         // check if we are trying to connect to a server
         if let Some(handle) = self.tcp_connecting_thread.take() {
             if handle.is_finished() {
@@ -165,7 +165,10 @@ impl<H: ClientHandler + 'static> Updatable for Client<H> {
 
         // send all messages !
         for message in to_send_messages.into_iter() {
-            self.send_tcp(message);
+            match message {
+                ClientMessage::Tcp(message) => self.send_tcp(message),
+                ClientMessage::Udp(message) => self.send_udp(message), 
+            }
         }
     }
 
@@ -184,12 +187,17 @@ pub enum DisconnectReason {
     ServerKick,
 }
 
+pub enum ClientMessage<E: NetworkSerializable> {
+    Tcp(E),
+    Udp(E),
+}
+
 pub trait ClientHandler {
     type ServerMessages: NetworkSerializable;
     type ClientsMessages: NetworkSerializable;
-    fn on_connected(&mut self, components: &mut ComponentTable) -> Vec<Self::ClientsMessages>;
+    fn on_connected(&mut self, components: &mut ComponentTable) -> Vec<ClientMessage<Self::ClientsMessages>>;
     fn on_connection_failed(&mut self, components: &mut ComponentTable);
     fn on_disconected(&mut self, reason: DisconnectReason, components: &mut ComponentTable);
-    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<Self::ClientsMessages>;
-    fn handle_tcp_message(&mut self, message: Self::ServerMessages, components: &mut ComponentTable) -> Vec<Self::ClientsMessages>;
+    fn update(&mut self, components: &mut ComponentTable, delta: f32) -> Vec<ClientMessage<Self::ClientsMessages>>;
+    fn handle_tcp_message(&mut self, message: Self::ServerMessages, components: &mut ComponentTable) -> Vec<ClientMessage<Self::ClientsMessages>>;
 }
