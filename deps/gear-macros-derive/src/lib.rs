@@ -27,7 +27,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
     // See https://doc.servo.org/syn/enum.Data.html
     let (size_func, serialize_func, deserialize_func) = match data {
         // Only if data is an enum, we do parsing
-        Data::Enum(data_enum) => {
+        Data::Enum(enum_data) => {
 
             // data_enum is of type syn::DataEnum
             // https://doc.servo.org/syn/struct.DataEnum.html
@@ -47,7 +47,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
             //
             // https://doc.servo.org/syn/punctuated/struct.Punctuated.html
             // https://doc.servo.org/syn/struct.Variant.html
-            for variant in &data_enum.variants {
+            for variant in &enum_data.variants {
 
                 // Variant's name
                 let ref variant_name = variant.ident;
@@ -63,16 +63,16 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
 
                 // size match arm for the current variant (compute size from fields)
                 let variant_size = match &variant.fields {
-                    Fields::Unit => quote!{std::mem::size_of::<usize>()}, // no fields, message of size usize (id)
+                    Fields::Unit => quote!{std::mem::size_of::<u64>()}, // no fields, message of size usize (id)
                     Fields::Unnamed(fields) => {
-                        let mut field_sum = quote!{std::mem::size_of::<usize>()};
+                        let mut field_sum = quote!{std::mem::size_of::<u64>()};
                         for field in fields.unnamed.iter() {
                             field_sum.extend(quote!{+ std::mem::size_of::<#field>()})
                         }
                         field_sum
                     },
                     Fields::Named(fields) => {
-                        let mut field_sum = quote!{std::mem::size_of::<usize>()};
+                        let mut field_sum = quote!{std::mem::size_of::<u64>()};
                         for field in fields.named.iter() {
                             field_sum.extend(quote!{+ std::mem::size_of::<#field>()})
                         }
@@ -85,7 +85,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
 
                 serialize_func_internal.extend(match &variant.fields {
                     Fields::Unit => quote_spanned! {variant.span()=>
-                        #name::#variant_name => NetworkSerializable::serialize(#variant_id as usize),
+                        #name::#variant_name => NetworkSerializable::serialize(#variant_id as u64),
                     }, // no fields, message of size 0
                     Fields::Unnamed(fields) => {
                         let field_name: Vec<_> = fields.unnamed.iter().enumerate().map(|(i, _)| {
@@ -95,7 +95,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                         quote_spanned! {variant.span()=>
                             #name::#variant_name (#(#field_name,)*) => {
                                 let mut result = Vec::with_capacity(self.size());
-                                result.append(&mut NetworkSerializable::serialize(#variant_id as usize));
+                                result.append(&mut NetworkSerializable::serialize(#variant_id as u64));
                         
                                 #(
                                     result.append(&mut NetworkSerializable::serialize(#field_name));
@@ -113,7 +113,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                         quote_spanned! {variant.span()=>
                             #name::#variant_name (#(#field_name,)*) => {
                                 let mut result = Vec::with_capacity(self.size());
-                                result.append(&mut NetworkSerializable::serialize(#variant_id as usize));
+                                result.append(&mut NetworkSerializable::serialize(#variant_id as u64));
                         
                                 #(
                                     result.append(&mut NetworkSerializable::serialize(#field_name));
@@ -137,7 +137,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                         
                         quote_spanned! {variant.span()=>
                             #variant_id => {
-                                let mut offset = std::mem::size_of::<usize>();;
+                                let mut offset = std::mem::size_of::<u64>();;
                         
                                 #(
                                     let #field_name = match NetworkSerializable::deserialize((&data[offset..offset+std::mem::size_of::<#field_types>()]).to_vec()) {
@@ -159,7 +159,7 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                         
                         quote_spanned! {variant.span()=>
                             #variant_id => {
-                                let mut offset = std::mem::size_of::<usize>(); // we read the id !
+                                let mut offset = std::mem::size_of::<u64>(); // we read the id !
                                 
                                 #(
                                     let #field_name = match NetworkSerializable::deserialize((&data[offset..offset+std::mem::size_of::<#field_types>()]).to_vec()) {
@@ -167,7 +167,6 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                                         Err(e) => return Err(e),
                                     };
                                     offset += std::mem::size_of::<#field_types>();
-                                    derive_error!("here");
                                 )*
                                 
                                 Ok(#name::#variant_name (#(#field_name,)*))
@@ -190,22 +189,137 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
             },
             quote!{
                 // read enum id in the data !
-                let id: usize = match NetworkSerializable::deserialize((&data[0..std::mem::size_of::<usize>()]).try_into().unwrap()) {
+                let id: u64 = match NetworkSerializable::deserialize((&data[0..std::mem::size_of::<u64>()]).try_into().unwrap()) {
                     Ok(result) => result,
                     Err(e) => return Err(NetworkUnserializeError::IncompleteData),
                 };
-                match id {
+                match id as usize {
                     #deserialize_func_internal
                     _ => Err(NetworkUnserializeError::InvalidId),
                 }
             })
             
         },
-        Data::Struct(_data_struct) => {
-            // todo
-            return derive_error!("IsVariant is only implemented for enums (structs incoming tho)");
+        Data::Struct(struct_data) => {
+
+            // serialize function : returns Vec<u8> being the raw data.
+            let mut serialize_func_internal = TokenStream2::new();
+            // deserialize function : returns Self from id and Vec<u8>
+            let mut deserialize_func_internal = TokenStream2::new();
+
+            // size match arm for the current variant (compute size from fields)
+            let struct_size = match &struct_data.fields {
+                Fields::Unit => quote!{0}, // no fields, message of size 0 (no need to have variant id)
+                Fields::Unnamed(fields) => {
+                    let mut field_sum = quote!{0};
+                    for field in fields.unnamed.iter() {
+                        field_sum.extend(quote!{+ std::mem::size_of::<#field>()})
+                    }
+                    field_sum
+                },
+                Fields::Named(fields) => {
+                    let mut field_sum = quote!{0};
+                    for field in fields.named.iter() {
+                        field_sum.extend(quote!{+ std::mem::size_of::<#field>()})
+                    }
+                    field_sum
+                },
+            };
+
+            serialize_func_internal.extend(match &struct_data.fields {
+                Fields::Unit => {quote!{}}, // no fields, message of size 0
+                Fields::Unnamed(fields) => {
+                    // serialize all the fields
+                    let field_name: Vec<_> = fields.unnamed.iter().enumerate().map(|(i, _)| {
+                        quote!(self.#i)
+                    }).collect();
+                    
+                    quote! {
+                        let mut result = Vec::with_capacity(self.size());
+                
+                        #(
+                            result.append(&mut NetworkSerializable::serialize(#field_name));
+                        )*
+                
+                        result
+                    }
+                },
+                Fields::Named(fields) => {
+
+                    
+                    let field_name: Vec<_> = fields.named.iter().map(|name| {
+                        quote!{#name}
+                    }).collect();
+                    
+                    quote! {
+                        let mut result = Vec::with_capacity(self.size());
+                        
+                        #(
+                            result.append(&mut NetworkSerializable::serialize(self.#field_name));
+                        )*
+                        
+                        result
+                    }
+                },
+            });
+
+            
+            deserialize_func_internal.extend(match &struct_data.fields {
+                Fields::Unit => quote! {
+                    #name {}
+                }, // no fields, message of size 0
+                Fields::Unnamed(fields) => {
+                    let field_names: Vec<_> = fields.unnamed.iter().enumerate().map(|(i, _)| {
+                        format_ident!("field{}", i)
+                    }).collect();
+                    let field_types: Vec<_> = fields.unnamed.iter().collect();
+                    
+                    quote! {
+                        let mut offset = std::mem::size_of::<u64>();;
+                    
+                        #(
+                            let #field_names = match NetworkSerializable::deserialize((&data[offset..offset+std::mem::size_of::<#field_types>()]).to_vec()) {
+                                Ok(result) => result,
+                                Err(e) => return Err(e),
+                            };
+                            offset += std::mem::size_of::<#field_types>();
+                        )*
+                
+                        Ok(#name (#(#field_names,)*))
+                    }
+                },
+                Fields::Named(fields) => {
+                    let field_names: Vec<_> = fields.named.iter().map(|name| {
+                        quote!{#name}
+                    }).collect();
+                    let field_types: Vec<_> = fields.named.iter().collect();
+                    
+                    
+                    quote! {
+                        let mut offset = std::mem::size_of::<u64>(); // we read the id !
+                        
+                        #(
+                            let #field_names = match NetworkSerializable::deserialize((&data[offset..offset+std::mem::size_of::<#field_types>()]).to_vec()) {
+                                Ok(result) => result,
+                                Err(e) => return Err(e),
+                            };
+                            offset += std::mem::size_of::<#field_types>();
+                        )*
+                        
+                        Ok(#name{
+                            #(
+                                #field_names,
+                            )*
+                        })
+                    }
+                },
+            });
+
+
+            (struct_size, serialize_func_internal, deserialize_func_internal)
+
         },
-        _ => return derive_error!("IsVariant is only implemented for enums"),
+        _ => return derive_error!("IsVariant is only implemented for enums and structs"),
     };
     
     

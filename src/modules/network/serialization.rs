@@ -10,6 +10,8 @@ pub trait NetworkSerializable {
     fn deserialize(data: Vec<u8>) -> Result<Self, NetworkUnserializeError> where Self: Sized;
 }
 
+
+
 // As the NetworkSerializable rely on itself to be implemented on enums, 
 // let's implement it on all default data types. 
 

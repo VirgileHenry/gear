@@ -3,11 +3,13 @@ mod client;
 mod packet;
 mod buffer;
 mod serialization;
+mod default_messages;
 
 pub use server::*;
 pub use client::*;
 pub use packet::*;
 pub use serialization::*;
+pub(crate) use default_messages::*;
 /*
 A lot of network code is a first implementation, and could be refactored in a better way.
 
