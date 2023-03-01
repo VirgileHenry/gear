@@ -170,7 +170,11 @@ impl UITransform {
     }
 
     pub fn contains_point(&mut self, point: Vector2<f64>) -> bool {
-        let ui_space_point = match self.inverted_screen_pos{Some(v) => v, None => return false} * Vector3::<f32>::new(point.x as f32, point.y as f32, 1.);
+        let new_point = Vector2::new(point.x / 600. - 1., point.y / 400. - 1.);
+        let ui_space_point = match self.inverted_screen_pos{
+            Some(v) => v,
+            None => return false,
+        } * Vector3::<f32>::new(new_point.x as f32, new_point.y as f32, 1.);
         0. <= ui_space_point.x && ui_space_point.x <= 1. && 0. <= ui_space_point.y && ui_space_point.y <= 1.
     }
 

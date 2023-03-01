@@ -35,11 +35,9 @@ fn main() {
 
 
     // assign the renderer to the window
-    let mut aspect_ratio = 1.0;
     match engine.get_gl_window_mut() {
         Some(window) => {
             window.set_new_renderer(Box::new(renderer));
-            aspect_ratio = window.aspect_ratio();
         },
         None => {},
     }
@@ -55,17 +53,20 @@ fn main() {
     let mut camera_component = CameraComponent::new_perspective_camera(None, 80.0, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
-    let sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
+    let _sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(1.0, 0.8, 0.7), Color::from_rgb(0.2, 0.2, 0.2)));
     
     // ui !
-    let ui_event_listener = create_entity!(&mut world.components; ui_event_manager());
+    let _ui_event_listener = create_entity!(&mut world.components; ui_event_manager());
     let mut button = Button::new();
     button.on_enter = Some(Box::new(|_, _, entering, _| {
         println!("button got entered : {}", entering);
     }));
+    button.callback = Some(Box::new(|_, _, _, _| {
+        println!("Button got clicked !");
+    }));
     let tf = UITransform::origin().sized(Vector2::new(400., 200.)).anchored(UIAnchorPoints::Center).relative_at(Vector2::new(0.5, 0.5));
     let button_renderer = UIRenderer::new(Material::from_program("UIShader").with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.8, 0.5, 0.6)}));
-    let button = create_entity!(&mut world.components; tf, button, button_renderer);
+    let _button = create_entity!(&mut world.components; tf, button, button_renderer);
 
 
     // world.set_entity_active(sun, false);
@@ -85,9 +86,6 @@ impl Updatable for RotatingSystem {
         self.timer += delta;
         for (transform, _other) in iterate_over_component_mut!(components; Transform, MeshRenderer) {
             transform.rotate_around(cgmath::Vector3::new(0.0, 1.0, 0.0), Rad(1.0 * delta));
-        }
-        for (transform, _other) in iterate_over_component_mut!(components; UITransform, UIRenderer) {
-            transform.rotate(Rad(1. * delta));
         }
     }
 

@@ -169,6 +169,10 @@ impl CameraComponent {
         camera
     }
 
+    fn render(&self, components: &ComponentTable) {
+        todo!()
+    }
+
     /// Set this camera as the one rendering the scene to the window
     #[allow(dead_code)]
     pub fn set_as_main(&mut self, components: &mut ComponentTable) {
