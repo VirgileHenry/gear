@@ -24,6 +24,11 @@ impl Material {
         self
     }
 
+    pub fn add_material_property<T: MaterialProperties + 'static>(&mut self, property: T) {
+        self.properties.insert(property.type_id(), Box::new(property));
+    }
+
+
     pub fn set_properties_to_shader(&self, shader: &ShaderProgram) {
         for (_key, property) in self.properties.iter() {
             property.set_properties_to_shader(shader);
@@ -40,6 +45,7 @@ impl Material {
             None => None,
         }
     }
+
 }
 
 pub trait MaterialProperties {
