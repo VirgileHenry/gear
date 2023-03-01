@@ -20,7 +20,8 @@ pub struct CameraComponent {
     field_of_view_y: f32,
     znear: f32,
     zfar: f32,
-    is_main: bool, // todo : autre manière de gérer ca mieux    
+    is_main: bool, // todo : autre manière de gérer ca mieux
+    render_each_frame: bool,
     gl_camera: Option<GlCamera>, // None if not yet defined
 }
 
@@ -157,6 +158,7 @@ impl CameraComponent {
             znear: znear,
             zfar: zfar,
             is_main: false,
+            render_each_frame: false,
             gl_camera: None,
         };
         

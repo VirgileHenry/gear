@@ -33,7 +33,7 @@ impl<H: ServerHandler> Server<H> {
             current_client_count: 0,
             next_available_id: 1,
             tcp_listener: {
-                let listener = TcpListener::bind(format!("127.0.0.1:{port}"))?; // todo : ip adress management
+                let listener = TcpListener::bind(format!("0.0.0.0:{port}"))?; // todo : ip adress management
                 listener.set_nonblocking(true)?;
                 listener
             },

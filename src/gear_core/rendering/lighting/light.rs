@@ -21,4 +21,12 @@ impl MainLight {
     pub fn ambient_as_vec(&self) -> cgmath::Vector3<f32> {
         self.ambient_color.as_vector()
     }
+
+    pub fn set_ambiant(&mut self, color: Color) {
+        self.ambient_color = color;
+    }
+
+    pub fn set_main(&mut self, color: Color) {
+        self.main_color = color;
+    }
 }
