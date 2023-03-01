@@ -19,13 +19,25 @@ def write_some_data(context, filepath):
         vertex_length = len(mesh.vertices)
         triangles_length = sum([1 for face in mesh.polygons if len(face.vertices) == 3])
         header = array('L', [vertex_length, triangles_length]) # L is unsigned long, so u32
-        header.tofile(f)
-        # write vertex data (f is float32 type)
-        vertex_data = array('f', concatenate([[v.co[0], v.co[1], v.co[2], v.normal[0], v.normal[1], v.normal[2], 0, 0] for v in mesh.vertices]))
-        # todo : uvs
-        vertex_data.tofile(f)
+        # compute triangles
+        triangles_data = array('L', concatenate([[mesh.loops[i].vertex_index for i in f.loop_indices][::-1] for f in mesh.polygons if len(f.vertices) == 3]))
+        # compute vertices
+        smooth_shading = True
+        if smooth_shading:
+            vertices = [[v.co[0], v.co[1], v.co[2], v.normal[0], v.normal[1], v.normal[2], 0, 0] for v in mesh.vertices]
+            # set the uv for the vertices
+            uv_layer = mesh.uv_layers.active.data
+            for loop in mesh.loops:
+                vertices[loop.vertex_index][6] = uv_layer[loop.index].uv[0]
+                vertices[loop.vertex_index][7] = uv_layer[loop.index].uv[1]
+        else:
+            # todo : flatshading
+            pass
+        vertex_data = array('f', concatenate(vertices))
+        # write data to file
         # write triangles data
-        triangles_data = array('L', concatenate([[mesh.loops[i].vertex_index for i in f.loop_indices] for f in mesh.polygons if len(f.vertices) == 3]))
+        header.tofile(f)
+        vertex_data.tofile(f)
         triangles_data.tofile(f)
         ob.select_set(False)
     f.close()
