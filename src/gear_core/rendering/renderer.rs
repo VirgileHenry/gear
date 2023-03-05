@@ -4,7 +4,7 @@ use cgmath::{SquareMatrix, Vector3, Vector4};
 use foundry::*;
 use gl::types::*;
 
-use crate::{gear_core::{
+use crate::{COPY_FRAG_SHADER, gear_core::{
     geometry::transform::Transform,
     rendering::{
         camera::CameraComponent,
@@ -16,8 +16,9 @@ use crate::{gear_core::{
         UIRenderer,
         UITransform
     },
-}, MeshRenderingBuffers, RENDER_FRAG_SHADER};
+}, MeshRenderingBuffers, RENDER_FRAG_SHADER, ShaderPipeline};
 use crate::{COPY_VERT_SHADER, Mesh};
+use crate::gear_core::camera::GlCamera;
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -37,7 +38,7 @@ pub struct DefaultOpenGlRenderer {
 impl DefaultOpenGlRenderer {
     pub fn new(window_dimensions: (i32, i32)) -> DefaultOpenGlRenderer {
 
-        let copy_shader = ShaderProgram::simple_program(RENDER_FRAG_SHADER, COPY_VERT_SHADER)
+        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, COPY_VERT_SHADER)
             .expect("Error while generating internal (copy) shader");
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let mesh_renderer = MeshRenderingBuffers::from(&mesh);
@@ -66,16 +67,28 @@ impl Renderer for DefaultOpenGlRenderer {
         self.render_scene(components);
         for (camera, _cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             if camera.is_main() {
-                let gl_camera = match camera.get_gl_camera() {
+                let mut gl_camera: &mut GlCamera = match camera.get_gl_camera_mut() {
                     Some(gl_cam) => gl_cam,
                     None => camera.generate_gl_cam(self.window_dimensions)
                 };
+
+                // Post processing step
+                let mut post_processing_pipeline = gl_camera.post_processing_pipeline();
+
+                post_processing_pipeline.invalidate("threshold");
+                post_processing_pipeline.compute("gamma_correction");
+                let processed_tex = post_processing_pipeline.get_texture(
+                    "gamma_correction",
+                    &Some(String::from("processed_image"))
+                );
+
+                // Rendering to screen with UI
                 unsafe {
                     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
                     gl::ActiveTexture(gl::TEXTURE0);
-                    gl_camera.get_color_attachment().bind();
+                    processed_tex.bind();
                     self.copy_shader.set_used();
                     self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos());
                     self.copy_shader.set_int("tex", 0);
@@ -145,8 +158,8 @@ impl DefaultOpenGlRenderer {
                 // set main light scene
                 for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
                     current_program.set_vec3("mainLightDir", (light_tf.world_pos() * Vector4::unit_z()).truncate());
-                    current_program.set_vec3("mainLightColor", light.color_as_vec());
-                    current_program.set_vec3("ambientColor", light.ambient_as_vec());
+                    current_program.set_vec3("mainLightColor", light.main_color_as_vec());
+                    current_program.set_vec3("ambientColor", light.ambient_color_as_vec());
                     break; // only first main light taken into account, the others would override the first one so let's avoid useless code
                 }
 
@@ -205,8 +218,7 @@ impl DefaultOpenGlRenderer {
                 }
             }
         }
-
-        
     }
+
 }
 

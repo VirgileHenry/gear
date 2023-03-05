@@ -4,7 +4,7 @@ extern crate gl;
 
 use std::collections::HashMap;
 
-use gl::types::{GLuint};
+use gl::types::GLuint;
 
 use crate::{ShaderProgram, Texture2D};
 
@@ -20,6 +20,8 @@ pub struct ComputeShader {
 
 impl ComputeShader {
     pub fn new(compute_src: &str, dispatch_dimensions: (i32, i32, i32)) -> Self {
+        println!("dispatch {:?}", dispatch_dimensions);
+
         Self {
             program: ShaderProgram::compute_program(compute_src).expect("Could not compile compute shader"),
 
@@ -29,6 +31,10 @@ impl ComputeShader {
 
             dispatch_dimensions,
         }
+    }
+
+    pub fn set_dispatch_dimensions(&mut self, dimensions: (i32, i32, i32)) {
+        self.dispatch_dimensions = dimensions;
     }
 
     pub fn add_read_texture(&mut self, name: &str, texture: Texture2D) {
@@ -67,6 +73,10 @@ impl ComputeShader {
         &self.program
     }
 
+    pub fn get_texture_count(&self) -> u32 {
+        (self.read_textures.len() + self.write_textures.len() + self.read_write_textures.len()) as u32
+    }
+
     /// /!\ The compute shader must be set used before
     pub fn begin_computation_with_dimensions(&self, dispatch_dimensions: (u32, u32, u32)) {
         unsafe { gl::DispatchCompute(dispatch_dimensions.0 as GLuint, dispatch_dimensions.1 as GLuint, dispatch_dimensions.2 as GLuint); }
@@ -79,5 +89,21 @@ impl ComputeShader {
 
     pub fn wait_for_result(&self) {
         unsafe { gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT) }
+    }
+}
+
+impl Clone for ComputeShader {
+    /// Clone the compute shader program and dimensions
+    /// ! not the textures
+    fn clone(&self) -> Self {
+        Self {
+            program: self.program.clone(),
+
+            read_write_textures: Default::default(),
+            write_textures: Default::default(),
+            read_textures: Default::default(),
+
+            dispatch_dimensions: self.dispatch_dimensions,
+        }
     }
 }

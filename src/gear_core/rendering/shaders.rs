@@ -9,6 +9,7 @@ pub use compute_shader::*;
 
 use crate::Texture2D;
 
+#[derive(Clone, Copy)]
 pub struct ShaderProgram {
     id: gl::types::GLuint,
 }
@@ -415,13 +416,14 @@ impl ShaderProgram {
     }
 }
 
-impl Drop for ShaderProgram {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteProgram(self.id);
-        }
-    }
-}
+// todo Besoin de bien y reflechir avant de faire ca
+//impl Drop for ShaderProgram {
+//    fn drop(&mut self) {
+//        unsafe {
+//            gl::DeleteProgram(self.id);
+//        }
+//    }
+//}
 
 
 pub struct Shader {

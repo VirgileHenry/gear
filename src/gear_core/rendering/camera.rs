@@ -4,8 +4,13 @@ extern crate gl;
 use foundry::*;
 use gl::types::GLuint;
 
+use post_processing_pipeline::create_post_processing_pipeline;
+
 use crate::gear_core::material::texture::TexturePresets;
 use crate::material::texture::Texture2D;
+use crate::ShaderPipeline;
+
+mod post_processing_pipeline;
 
 /*
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -32,6 +37,8 @@ pub struct GlCamera {
     depth_attachment: Texture2D,
     framebuffer_id: GLuint,
     show_wireframe: bool, // todo : better way to handle camera render options
+
+    post_processing_pipeline: ShaderPipeline,
 }
 
 impl GlCamera {
@@ -72,12 +79,16 @@ impl GlCamera {
     pub fn toggle_show_wireframe(&mut self) {
         self.show_wireframe = !self.show_wireframe;
     }
+
+    pub fn post_processing_pipeline(&mut self) -> &mut ShaderPipeline {
+        &mut self.post_processing_pipeline
+    }
 }
 
 impl CameraComponent {
 
     /// Generate a opengl framebuffer. Returns a boolean telling if it succeeded
-    pub fn generate_gl_cam(&mut self, dimensions: (i32, i32)) -> &GlCamera {
+    pub fn generate_gl_cam(&mut self, dimensions: (i32, i32)) -> &mut GlCamera {
 
         let mut id = 0;
         let color_text = Texture2D::new_from_presets(dimensions, TexturePresets::color_default(), None);
@@ -112,6 +123,7 @@ impl CameraComponent {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0); // unbind the framebuffer until needed
         }
 
+        println!("Create camera");
         // assign 
         self.gl_camera = Some(GlCamera {
             perspective_matrix: cgmath::perspective(cgmath::Deg(self.field_of_view_y), dimensions.0 as f32 / dimensions.1 as f32, self.znear, self.zfar),
@@ -120,9 +132,10 @@ impl CameraComponent {
             depth_attachment: depth_text,
             framebuffer_id: id,
             show_wireframe: false,
+            post_processing_pipeline: create_post_processing_pipeline(&color_text)
         });
 
-        match &self.gl_camera {
+        match &mut self.gl_camera {
             Some(gl_cam) => gl_cam,
             None => panic!("gl camera not found but was just created."),
         }
@@ -136,8 +149,16 @@ impl CameraComponent {
                 cam_buffer.viewport_dimensions = dimensions;
                 cam_buffer.color_attachment.resize(dimensions);
                 cam_buffer.depth_attachment.resize(dimensions);
+
+                // todo brice : better way to handle camera resize
+                cam_buffer.post_processing_pipeline.get_node_mut("threshold")
+                    .get_compute_shader_mut()
+                    .set_dispatch_dimensions((dimensions.0/2, dimensions.1/2, 1));
+                cam_buffer.post_processing_pipeline.get_node_mut("gamma_correction")
+                    .get_compute_shader_mut()
+                    .set_dispatch_dimensions((dimensions.0, dimensions.1, 1));
             },
-            None => {self.generate_gl_cam(dimensions);},
+            None => { self.generate_gl_cam(dimensions); },
         }
 
     }
@@ -191,6 +212,10 @@ impl CameraComponent {
 
     pub fn get_gl_camera(&self) -> &Option<GlCamera> {
         &self.gl_camera
+    }
+
+    pub fn get_gl_camera_mut(&mut self) -> &mut Option<GlCamera> {
+        &mut self.gl_camera
     }
 
     pub fn toggle_show_wireframe(&mut self) {
