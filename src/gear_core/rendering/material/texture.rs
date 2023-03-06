@@ -83,6 +83,17 @@ impl TexturePresets {
             format: gl::RGBA,
         }
     }
+
+    pub fn ocean_default() -> Self {
+        Self {
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            min_filter: gl::NEAREST,
+            mag_filter: gl::NEAREST,
+            internal_format: gl::RGB32F,
+            format: gl::RGB,
+        }
+    }
 }
 
 // todo brice : implémenter drop pour la texture, histoire de libérer les buffers opengl (cf les buffers)
@@ -110,6 +121,42 @@ impl Texture2D {
         }
         let tex = Self { id, dimensions, presets };
         tex.refresh(initial_value);
+        tex
+    }
+
+    pub fn load_from_vec(data: Vec<f32>, dimensions: (i32, i32), presets: TexturePresets) -> Self {
+        let mut id = 0;
+        unsafe {
+            gl::GenTextures(1, &mut id);
+        }
+        let tex =  Self{ id, dimensions, presets};
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, tex.id);
+            // set the texture wrapping/filtering options (on the currently bound texture object)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, tex.presets.wrap_t as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, tex.presets.wrap_s as GLint);
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MIN_FILTER,
+                tex.presets.min_filter as GLint,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MAG_FILTER,
+                tex.presets.mag_filter as GLint,
+            );
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                tex.presets.internal_format as GLint,
+                tex.dimensions.0,
+                tex.dimensions.1,
+                0,
+                tex.presets.format,
+                gl::FLOAT,
+                data.as_ptr() as *const c_void,
+            );
+        }
         tex
     }
 
