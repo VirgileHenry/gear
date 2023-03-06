@@ -42,6 +42,11 @@ pub struct GlCamera {
 }
 
 impl GlCamera {
+    pub fn aspect_ratio(&self) -> f32 {
+        let dim = self.color_attachment.get_dimensions();
+        dim.0 as f32 / dim.1 as f32
+    }
+
     #[allow(dead_code)]
     pub fn get_perspective_mat(&self) -> cgmath::Matrix4<f32> {
         self.perspective_matrix
@@ -224,5 +229,12 @@ impl CameraComponent {
         }
     }
 
+    pub fn get_z_near(&self) -> f32 {
+        self.znear
+    }
 
+    pub fn get_fov(&self) -> f32 {
+        self.field_of_view_y
+    }
 }
+
