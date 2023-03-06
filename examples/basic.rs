@@ -42,13 +42,14 @@ fn main() {
     let system = System::new(Box::new(rotater), UpdateFrequency::PerFrame);
 
     let _sphere = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.8, 0.0)), mesh_renderer);
-    let _cube = create_entity!(&mut world.components; Transform::origin(), mesh_renderer2);
+    let cube = create_entity!(&mut world.components; Transform::origin(), mesh_renderer2);
     let mut camera_component = CameraComponent::new_perspective_camera(None, 80.0, 0.1, 100.0);
     camera_component.set_as_main(&mut world.components);
     let _camera = create_entity!(&mut world.components; Transform::origin().translated(Vector3::new(0.0, 1.5, 5.0)), camera_component);
     let _sun = create_entity!(&mut world.components; Transform::origin().rotated(Euler::new(Rad(-1.4), Rad(0.75), Rad(0.0))), MainLight::new(Color::from_rgb(8.0, 5.8, 4.7), Color::from_rgb(0.2, 0.2, 0.2)));
     
     // world.set_entity_active(sun, false);
+    let (cube_tf, cube_mr) = get_components!(&world.components; cube; mut Transform, MeshRenderer);
 
     world.register_system(system, 10);
     // start main loop

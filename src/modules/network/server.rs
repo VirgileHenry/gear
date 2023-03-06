@@ -45,7 +45,7 @@ impl<H: ServerHandler> Server<H> {
         })
     }
 
-    pub fn handle_incoming_connection(&mut self, mut stream: TcpStream, adress: SocketAddr, components: &mut ComponentTable) -> Vec<ServerMessage<H::ServerMessages>>{
+    pub fn handle_incoming_connection(&mut self, stream: TcpStream, adress: SocketAddr, components: &mut ComponentTable) -> Vec<ServerMessage<H::ServerMessages>>{
         println!("[NETWORK SERVER] -> incoming connection : {adress}.");
         if self.current_client_count < self.max_client_count {
             println!("[NETWORK SERVER] -> accepted connection as Connection {}.", self.next_available_id);

@@ -1,4 +1,4 @@
-use std::{net::{TcpStream, UdpSocket, SocketAddr, IpAddr, SocketAddrV4, Ipv4Addr}, thread::JoinHandle, io::Write};
+use std::{net::{TcpStream, UdpSocket, SocketAddr, SocketAddrV4, Ipv4Addr}, thread::JoinHandle, io::Write};
 use std::thread;
 
 use foundry::*;

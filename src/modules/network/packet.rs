@@ -1,5 +1,4 @@
 use std::mem::size_of;
-use glfw::ffi::RESIZABLE;
 
 use crate::{NetworkSerializable, DefaultNetworkMessages};
 
