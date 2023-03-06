@@ -12,11 +12,12 @@ impl Color {
         }
     }
 
+    pub fn lerp(a: Color, b: Color, x: f32) -> Self {
+        Self { rgb_values: a.rgb_values*(1. - x) + b.rgb_values*x }
+    }
+
     pub fn as_vector(&self) -> cgmath::Vector3<f32> {
         self.rgb_values
     }
 
-    pub fn lerp(col1: Color, col2: Color, t: f32) -> Color {
-        Color { rgb_values: col1.as_vector() * t + col2.as_vector() * (1. - t) }
-    }
 }

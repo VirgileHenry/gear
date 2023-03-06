@@ -4,7 +4,7 @@ use glfw::ffi::glfwGetTime;
 use gear::*;
 
 fn main() {
-    let window_size = (1200, 800);
+    let window_size = (1024+512, 1024);
 
     // create the engine with the window
     let mut engine = Engine::new() // creates the engine

@@ -32,7 +32,9 @@ fn main() {
         .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)});
 
     let mut texture_attachment = TextureAttachmentProp::new();
-    texture_attachment.attach_texture("u_tex_sampler", Texture2D::load_from("render5.png"));
+    let texture = Texture2D::load_from("render5.png");
+    unsafe { texture.generate_mipmap(); }
+    texture_attachment.attach_texture("u_tex_sampler", texture);
 
     let mut material2 = Material::from_program("unlitTextureProgram")
         .with_property(MonochromeMaterialProperties{color: Color::from_rgb(0.27, 0.13, 0.68)})

@@ -1,7 +1,9 @@
-use crate::gear_core::*;
-use foundry::*;
-use glfw::{Context, Glfw, InitError, Window, WindowEvent};
 use std::{any::Any, sync::mpsc::Receiver};
+
+use foundry::*;
+use glfw::{Context, Glfw, InitError, SwapInterval, Window, WindowEvent};
+
+use crate::gear_core::*;
 
 pub struct GlGameWindow {
     glfw: Glfw,
@@ -44,6 +46,8 @@ impl GlGameWindow {
                 None => return Err(GlWindowError::GlfwWindowCreationError),
             };
 
+
+
         window.make_current();
         // poll every thing for now
         // todo : better way to chose what to poll
@@ -66,6 +70,7 @@ impl GlGameWindow {
             gl::Enable(gl::DEPTH_TEST);
         }
 
+        glfw.set_swap_interval(SwapInterval::None);
 
         return Ok(GlGameWindow {
             glfw,
@@ -108,6 +113,7 @@ impl GlGameWindow {
                     if cam_comp.is_main() {
                         // resize it
                         cam_comp.resize_viewport((width, height));
+
                     }
                 }
 

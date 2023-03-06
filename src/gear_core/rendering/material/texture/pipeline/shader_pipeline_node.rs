@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
-use gl::types::GLuint;
+use gl::types::{GLenum, GLuint};
 
 use crate::{ComputeShader, MeshRenderer, ShaderPipelineNodeInput, ShaderProgram};
 use crate::gear_core::material::texture::{Texture2D, TexturePresets};
@@ -117,11 +117,11 @@ impl ShaderPipelineNode {
 
 
         let mut current_active_tex = 0;
-        gl::ActiveTexture(gl::TEXTURE0);
 
         // Set up input textures
         match texture_map {
             ShaderPipelineNodeInput::Texture(name, tex) => {
+                gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
                 tex.bind();
                 shader.set_int(name, current_active_tex as i32);
             },
@@ -146,9 +146,12 @@ impl ShaderPipelineNode {
 
     pub unsafe fn compute(&self, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
 
+        let mut current_active_tex: GLenum = 0;
+
         // Binding current node framebuffer
         let shader = match &self.node_type {
             Compute(compute_shader) => {
+                current_active_tex += compute_shader.get_texture_count();
                 compute_shader.set_used()
             }
             _ => {
@@ -156,12 +159,10 @@ impl ShaderPipelineNode {
             }
         };
 
-        let mut current_active_tex = 0;
-        gl::ActiveTexture(gl::TEXTURE0);
-
         // Set up input textures
         match texture_map {
             ShaderPipelineNodeInput::Texture(name, tex) => {
+                gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
                 tex.bind();
                 shader.set_int(name, current_active_tex as i32);
             },
@@ -259,6 +260,13 @@ impl ShaderPipelineNode {
         }
         for (name, val) in &self.param.vec4s {
             shader.set_vec4(name, *val);
+        }
+    }
+
+    pub fn get_compute_shader_mut(&mut self) -> &mut ComputeShader {
+        match &mut self.node_type {
+            Compute(shader) => shader,
+            _ => panic!("This node is not a compute shader !"),
         }
     }
 
