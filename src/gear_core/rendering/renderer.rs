@@ -82,7 +82,7 @@ impl Renderer for DefaultOpenGlRenderer {
                 // Post processing step
                 let mut post_processing_pipeline = gl_camera.post_processing_pipeline();
 
-                post_processing_pipeline.invalidate("threshold");
+                post_processing_pipeline.invalidate("fog");
                 post_processing_pipeline.set_float("fog","aspect", aspect);
                 post_processing_pipeline.set_float("fog","half_fov", fov/2.);
                 post_processing_pipeline.set_float("fog","z_near", z_near);
