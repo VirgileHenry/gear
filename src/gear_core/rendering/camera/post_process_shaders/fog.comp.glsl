@@ -4,8 +4,8 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (binding = 0, rgba32f) writeonly uniform image2D fog_tex;
-layout (binding = 1, rgba32f) readonly uniform image2D color_out;
+layout (location = 0, binding = 0, rgba32f) writeonly uniform image2D fog_tex;
+layout (location = 1, binding = 1, rgba32f) readonly uniform image2D color_out;
 layout (binding = 2) uniform sampler2D input_tex;
 
 uniform float a;
