@@ -77,15 +77,19 @@ pub fn create_post_processing_pipeline(processed_image: &Texture2D, depth_tex: &
     let threshold_compute_source: &str = include_str!("post_process_shaders/threshold.comp.glsl");
     let threshold_output_tex = Texture2D::new_from_presets((tex_dim.0/2, tex_dim.1/2), TexturePresets::pipeline_default(), None);
     let mut threshold_compute_shader = ComputeShader::new(threshold_compute_source, (tex_dim.0/2/DISPATCH_GROUP_SIZE.0, tex_dim.1/2/DISPATCH_GROUP_SIZE.1, 1));
+    threshold_compute_shader.add_read_texture("image_to_process", processed_image.clone());
     threshold_compute_shader.add_write_texture("processed_image", threshold_output_tex);
     pipeline.add_compute_node("threshold", threshold_compute_shader);
+    pipeline.set_input_texture("image_to_process", processed_image.clone(), "threshold");
+
     //pipeline.set_input_texture("image_to_process", processed_image.clone(), "threshold");
-    pipeline.link_compute_to_node(
-        "fog",
-        "fog_tex",
-        "image_to_process",
-        "threshold",
-    );
+    //pipeline.link_compute_to_node(
+    //    "fog",
+    //    "fog_tex",
+    //    "image_to_process",
+    //    "threshold",
+    //);
+
 
 
     pipeline.set_float("threshold", "threshold",1.0);
@@ -150,15 +154,10 @@ pub fn create_post_processing_pipeline(processed_image: &Texture2D, depth_tex: &
     let mut additive_compute_shader = ComputeShader::new(additive_source, (tex_dim.0/DISPATCH_GROUP_SIZE.0, tex_dim.1/DISPATCH_GROUP_SIZE.1, 1));
 
     additive_compute_shader.add_write_texture("result", additive_output_tex);
+    additive_compute_shader.add_read_texture("tex_before_threshold", processed_image.clone());
     pipeline.add_compute_node("additive_blender", additive_compute_shader);
-    pipeline.link_compute_to_node(
-        "fog",
-        "fog_tex",
-        "tex_before_threshold",
-        "additive_blender",
-    );
 
-    //additive_compute_shader.add_read_texture("tex_before_threshold", processed_image.clone());
+
 
 
     for mip in 2..(2+DOWN_SAMPLING_STEPS) {

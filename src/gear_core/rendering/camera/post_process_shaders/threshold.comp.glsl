@@ -10,10 +10,7 @@ uniform float threshold;
 void main(void)
 {
     ivec2 texcoord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 tex_size = textureSize(image_to_process, 0);
-    if (tex_size.x <= texcoord.x || tex_size.y <= texcoord.y) {
-        return;
-    }
+
 
     vec2 uv = vec2(gl_GlobalInvocationID.xy)/gl_NumWorkGroups.xy/gl_WorkGroupSize.xy;
     vec4 input_color = texelFetch(image_to_process, texcoord*2, 0);
