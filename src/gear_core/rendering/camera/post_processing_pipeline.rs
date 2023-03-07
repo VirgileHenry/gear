@@ -70,7 +70,7 @@ pub fn create_post_processing_pipeline(processed_image: &Texture2D, depth_tex: &
     fog_compute_shader.add_read_texture("color_out", processed_image.clone());
     pipeline.add_compute_node("fog", fog_compute_shader);
     pipeline.set_input_texture("input_tex", depth_tex.clone(), "fog");
-    pipeline.set_float("fog", "a",0.003);
+    pipeline.set_float("fog", "a",0.0003);
     pipeline.set_float("fog", "b",0.003);
 
 

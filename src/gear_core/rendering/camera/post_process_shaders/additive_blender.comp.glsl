@@ -3,9 +3,9 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (binding = 0, rgba32f) writeonly uniform image2D result;
-layout (location = 1) uniform sampler2D tex_before_threshold;
-layout (location = 2) uniform sampler2D blurred[DOWN_SAMPLING_STEPS];
+layout (rgba32f) writeonly uniform image2D result;
+uniform sampler2D tex_before_threshold;
+uniform sampler2D blurred[DOWN_SAMPLING_STEPS];
 
 void main(void)
 {

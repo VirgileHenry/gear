@@ -2,7 +2,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (location = 0, rgba32f) writeonly uniform image2D downsampled_tex;
+layout (rgba32f) writeonly uniform image2D downsampled_tex;
 uniform sampler2D input_tex;
 
 uniform int blur_size;

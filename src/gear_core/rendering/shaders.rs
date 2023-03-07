@@ -339,67 +339,49 @@ impl ShaderProgram {
 
     /// Set an image2D uniform.
     /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
-    pub fn set_image2d_read_write(&self, name: &str, image: &Texture2D) {
+    pub fn set_image2d_read_write(&self, image: &Texture2D, index: u32) {
         unsafe {
-            let c_name = CString::new(name)
-                .unwrap()
-                .into_bytes_with_nul();
-            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
-            if loc != -1 {
-                gl::BindImageTexture(
-                    loc as gl::types::GLuint,
-                    image.get_id(),
-                    0,
-                    gl::FALSE,
-                    0,
-                    gl::READ_WRITE, // todo : READ_WRITE or other ?
-                    image.get_presets().internal_format
-                )
-            }
+            gl::BindImageTexture(
+                index as gl::types::GLuint,
+                image.get_id(),
+                0,
+                gl::FALSE,
+                0,
+                gl::READ_WRITE, // todo : READ_WRITE or other ?
+                image.get_presets().internal_format
+            )
         }
     }
 
     /// Set an image2D uniform.
     /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
-    pub fn set_image2d_read(&self, name: &str, image: &Texture2D) {
+    pub fn set_image2d_read(&self, image: &Texture2D, index: u32) {
         unsafe {
-            let c_name = CString::new(name)
-                .unwrap()
-                .into_bytes_with_nul();
-            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
-            if loc != -1 {
-                gl::BindImageTexture(
-                    loc as gl::types::GLuint,
-                    image.get_id(),
-                    0,
-                    gl::FALSE,
-                    0,
-                    gl::READ_ONLY, // todo : READ_WRITE or other ?
-                    image.get_presets().internal_format
-                )
-            }
+            gl::BindImageTexture(
+                index as gl::types::GLuint,
+                image.get_id(),
+                0,
+                gl::FALSE,
+                0,
+                gl::READ_ONLY, // todo : READ_WRITE or other ?
+                image.get_presets().internal_format
+            )
         }
     }
 
     /// Set an image2D uniform.
     /// Will fail silently, so a same renderer can be adapted to different shaders without requirements.
-    pub fn set_image2d_write(&self, name: &str, image: &Texture2D) {
+    pub fn set_image2d_write(&self, image: &Texture2D, index: u32) {
         unsafe {
-            let c_name = CString::new(name)
-                .unwrap()
-                .into_bytes_with_nul();
-            let loc = gl::GetUniformLocation(self.id, c_name.as_ptr().cast());
-            if loc != -1 {
-                gl::BindImageTexture(
-                    loc as gl::types::GLuint,
-                    image.get_id(),
-                    0,
-                    gl::FALSE,
-                    0,
-                    gl::WRITE_ONLY, // todo : READ_WRITE or other ?
-                    image.get_presets().internal_format
-                )
-            }
+            gl::BindImageTexture(
+                index as gl::types::GLuint,
+                image.get_id(),
+                0,
+                gl::FALSE,
+                0,
+                gl::WRITE_ONLY, // todo : READ_WRITE or other ?
+                image.get_presets().internal_format
+            )
         }
     }
 

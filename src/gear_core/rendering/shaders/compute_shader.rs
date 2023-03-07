@@ -59,14 +59,22 @@ impl ComputeShader {
     pub fn set_used(&self) -> &ShaderProgram {
         self.program.set_used();
 
+        let mut location = 0;
+
         for (name, texture) in &self.read_textures {
-            self.program.set_image2d_read(name, texture);
+            self.program.set_int(name, location);
+            self.program.set_image2d_read(texture, location as u32);
+            location += 1;
         }
         for (name, texture) in &self.write_textures {
-            self.program.set_image2d_write(name, texture);
+            self.program.set_int(name, location);
+            self.program.set_image2d_write(texture, location as u32);
+            location += 1;
         }
         for (name, texture) in &self.read_write_textures {
-            self.program.set_image2d_read_write(name, texture);
+            self.program.set_int(name, location);
+            self.program.set_image2d_read_write(texture, location as u32);
+            location += 1;
         }
 
         &self.program
