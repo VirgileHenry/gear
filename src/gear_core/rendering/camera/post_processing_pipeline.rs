@@ -3,18 +3,94 @@ use crate::{ComputeShader, ShaderPipeline, Texture2D, TexturePresets};
 static DISPATCH_GROUP_SIZE: (i32, i32) = (16, 16);
 static DOWN_SAMPLING_STEPS: i32 = 4;
 
-pub fn create_post_processing_pipeline(processed_image: &Texture2D) -> ShaderPipeline {
+pub fn resize_post_processing_pipeline(pipeline: &mut ShaderPipeline, new_dimension: (i32, i32)) {
+    // todo brice : better way to handle camera resize
+    pipeline.get_node_mut("fog")
+        .get_compute_shader_mut()
+        .set_dispatch_dimensions(((new_dimension.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (new_dimension.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+    pipeline.get_node_mut("fog")
+        .get_texture(&Some(String::from("fog_tex")))
+        .resize(new_dimension);
+
+    let mut downsample_dim = (new_dimension.0/2, new_dimension.1/2);
+
+    pipeline.get_node_mut("threshold")
+        .get_compute_shader_mut()
+        .set_dispatch_dimensions(((downsample_dim.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (downsample_dim.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+    pipeline.get_node_mut("threshold")
+        .get_texture(&Some(String::from("processed_image")))
+        .resize(downsample_dim);
+
+    for mip in 2..(2+DOWN_SAMPLING_STEPS) {
+        downsample_dim = (downsample_dim.0/2, downsample_dim.1/2);
+
+        let node_downsampler_and_blur_x_name = format!("downsample_blur_x_{mip}");
+        pipeline.get_node_mut(&node_downsampler_and_blur_x_name)
+            .get_compute_shader_mut()
+            .set_dispatch_dimensions(((downsample_dim.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (downsample_dim.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+        pipeline.get_node_mut(&node_downsampler_and_blur_x_name)
+            .get_texture(&Some(String::from("downsampled_tex")))
+            .resize(downsample_dim);
+
+        let node_blur_y_name = format!("blur_y_{mip}");
+        pipeline.get_node_mut(&node_blur_y_name)
+            .get_compute_shader_mut()
+            .set_dispatch_dimensions(((downsample_dim.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (downsample_dim.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+        pipeline.get_node_mut(&node_blur_y_name)
+            .get_texture(&Some(String::from("blurred_tex")))
+            .resize(downsample_dim);
+    }
+
+    pipeline.get_node_mut("additive_blender")
+        .get_compute_shader_mut()
+        .set_dispatch_dimensions(((new_dimension.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (new_dimension.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+    pipeline.get_node_mut("additive_blender")
+        .get_texture(&Some(String::from("result")))
+        .resize(new_dimension);
+
+    pipeline.get_node_mut("gamma_correction")
+        .get_compute_shader_mut()
+        .set_dispatch_dimensions(((new_dimension.0+DISPATCH_GROUP_SIZE.0-1)/DISPATCH_GROUP_SIZE.0, (new_dimension.1+DISPATCH_GROUP_SIZE.1-1)/DISPATCH_GROUP_SIZE.1, 1));
+    pipeline.get_node_mut("gamma_correction")
+        .get_texture(&Some(String::from("processed_image")))
+        .resize(new_dimension);
+
+}
+
+pub fn create_post_processing_pipeline(processed_image: &Texture2D, depth_tex: &Texture2D) -> ShaderPipeline {
     let mut pipeline = ShaderPipeline::new();
 
     let tex_dim = processed_image.get_dimensions();
+
+
+    let fog_compute_source: &str = include_str!("post_process_shaders/fog.comp.glsl");
+    let fog_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
+    let mut fog_compute_shader = ComputeShader::new(fog_compute_source, (tex_dim.0/DISPATCH_GROUP_SIZE.0, tex_dim.1/DISPATCH_GROUP_SIZE.1, 1));
+    fog_compute_shader.add_write_texture("fog_tex", fog_output_tex);
+    fog_compute_shader.add_read_texture("color_out", processed_image.clone());
+    pipeline.add_compute_node("fog", fog_compute_shader);
+    pipeline.set_input_texture("input_tex", depth_tex.clone(), "fog");
+    pipeline.set_float("fog", "a",0.003);
+    pipeline.set_float("fog", "b",0.003);
+
 
     let threshold_compute_source: &str = include_str!("post_process_shaders/threshold.comp.glsl");
     let threshold_output_tex = Texture2D::new_from_presets((tex_dim.0/2, tex_dim.1/2), TexturePresets::pipeline_default(), None);
     let mut threshold_compute_shader = ComputeShader::new(threshold_compute_source, (tex_dim.0/2/DISPATCH_GROUP_SIZE.0, tex_dim.1/2/DISPATCH_GROUP_SIZE.1, 1));
     threshold_compute_shader.add_write_texture("processed_image", threshold_output_tex);
     pipeline.add_compute_node("threshold", threshold_compute_shader);
-    pipeline.set_input_texture("image_to_process", processed_image.clone(), "threshold");
+    //pipeline.set_input_texture("image_to_process", processed_image.clone(), "threshold");
+    pipeline.link_compute_to_node(
+        "fog",
+        "fog_tex",
+        "image_to_process",
+        "threshold",
+    );
+
+
     pipeline.set_float("threshold", "threshold",1.0);
+
+
 
     let downsampler_and_blur_x_source = include_str!("post_process_shaders/downsampler_and_blur_x.comp.glsl");
     let blur_y_source = include_str!("post_process_shaders/blur_y.comp.glsl");
@@ -72,9 +148,18 @@ pub fn create_post_processing_pipeline(processed_image: &Texture2D) -> ShaderPip
     let additive_source: &str = include_str!("post_process_shaders/additive_blender.comp.glsl");
     let additive_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
     let mut additive_compute_shader = ComputeShader::new(additive_source, (tex_dim.0/DISPATCH_GROUP_SIZE.0, tex_dim.1/DISPATCH_GROUP_SIZE.1, 1));
-    additive_compute_shader.add_read_texture("tex_before_threshold", processed_image.clone());
+
     additive_compute_shader.add_write_texture("result", additive_output_tex);
     pipeline.add_compute_node("additive_blender", additive_compute_shader);
+    pipeline.link_compute_to_node(
+        "fog",
+        "fog_tex",
+        "tex_before_threshold",
+        "additive_blender",
+    );
+
+    //additive_compute_shader.add_read_texture("tex_before_threshold", processed_image.clone());
+
 
     for mip in 2..(2+DOWN_SAMPLING_STEPS) {
         let node_output_name = format!("blur_y_{mip}");

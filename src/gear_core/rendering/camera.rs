@@ -6,6 +6,7 @@ use gl::types::GLuint;
 
 use post_processing_pipeline::create_post_processing_pipeline;
 
+use crate::gear_core::camera::post_processing_pipeline::resize_post_processing_pipeline;
 use crate::gear_core::material::texture::TexturePresets;
 use crate::material::texture::Texture2D;
 use crate::ShaderPipeline;
@@ -137,7 +138,7 @@ impl CameraComponent {
             depth_attachment: depth_text,
             framebuffer_id: id,
             show_wireframe: false,
-            post_processing_pipeline: create_post_processing_pipeline(&color_text)
+            post_processing_pipeline: create_post_processing_pipeline(&color_text, &depth_text)
         });
 
         match &mut self.gl_camera {
@@ -155,13 +156,8 @@ impl CameraComponent {
                 cam_buffer.color_attachment.resize(dimensions);
                 cam_buffer.depth_attachment.resize(dimensions);
 
-                // todo brice : better way to handle camera resize
-                cam_buffer.post_processing_pipeline.get_node_mut("threshold")
-                    .get_compute_shader_mut()
-                    .set_dispatch_dimensions((dimensions.0/2, dimensions.1/2, 1));
-                cam_buffer.post_processing_pipeline.get_node_mut("gamma_correction")
-                    .get_compute_shader_mut()
-                    .set_dispatch_dimensions((dimensions.0, dimensions.1, 1));
+                resize_post_processing_pipeline(&mut cam_buffer.post_processing_pipeline, dimensions);
+
             },
             None => { self.generate_gl_cam(dimensions); },
         }

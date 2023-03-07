@@ -65,18 +65,38 @@ impl Renderer for DefaultOpenGlRenderer {
     fn render(&self, components: &mut ComponentTable) {
 
         self.render_scene(components);
-        for (camera, _cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
+        for (camera, cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             if camera.is_main() {
+
+                let fov = camera.get_fov();
+                let z_near = camera.get_z_near();
+
                 let mut gl_camera: &mut GlCamera = match camera.get_gl_camera_mut() {
                     Some(gl_cam) => gl_cam,
                     None => camera.generate_gl_cam(self.window_dimensions)
                 };
 
+                let aspect = gl_camera.aspect_ratio();
+                let projectionMat = gl_camera.get_perspective_mat();
+
                 // Post processing step
                 let mut post_processing_pipeline = gl_camera.post_processing_pipeline();
 
-                post_processing_pipeline.invalidate("threshold");
+                post_processing_pipeline.invalidate("fog");
+                post_processing_pipeline.set_float("fog","aspect", aspect);
+                post_processing_pipeline.set_float("fog","half_fov", fov/2.);
+                post_processing_pipeline.set_float("fog","z_near", z_near);
+                post_processing_pipeline.set_mat4("fog","projectionMat", projectionMat);
+                post_processing_pipeline.set_mat4("fog","viewMat", cam_transform.world_pos().invert().unwrap());
+                post_processing_pipeline.set_vec3("fog", "camPos", cam_transform.position());
+                for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
+                    post_processing_pipeline.set_vec3("fog", "mainLightDir", (light_tf.world_pos() * Vector4::unit_z()).truncate());
+                    post_processing_pipeline.set_vec3("fog", "mainLightColor", light.main_color_as_vec());
+                    post_processing_pipeline.set_vec3("fog", "ambientColor", light.ambient_color_as_vec());
+                }
+
                 post_processing_pipeline.compute("gamma_correction");
+
                 let processed_tex = post_processing_pipeline.get_texture(
                     "gamma_correction",
                     &Some(String::from("processed_image"))

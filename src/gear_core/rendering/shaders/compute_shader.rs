@@ -20,7 +20,6 @@ pub struct ComputeShader {
 
 impl ComputeShader {
     pub fn new(compute_src: &str, dispatch_dimensions: (i32, i32, i32)) -> Self {
-        println!("dispatch {:?}", dispatch_dimensions);
 
         Self {
             program: ShaderProgram::compute_program(compute_src).expect("Could not compile compute shader"),
