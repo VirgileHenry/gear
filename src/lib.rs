@@ -1,9 +1,11 @@
 extern crate core;
+#[macro_use]
+extern crate lazy_static;
 
 pub use cgmath::{
     Deg,
     Euler,
-    Matrix4, Matrix3, Matrix2,
+    Matrix2, Matrix3, Matrix4,
     Quaternion,
     Rad,
     Vector2, Vector3, Vector4,

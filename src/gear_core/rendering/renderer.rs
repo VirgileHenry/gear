@@ -79,28 +79,38 @@ impl Renderer for DefaultOpenGlRenderer {
                 let aspect = gl_camera.aspect_ratio();
                 let projectionMat = gl_camera.get_perspective_mat();
 
-                // Post processing step
-                let mut post_processing_pipeline = gl_camera.post_processing_pipeline();
 
-                post_processing_pipeline.invalidate("fog");
-                post_processing_pipeline.set_float("fog","aspect", aspect);
-                post_processing_pipeline.set_float("fog","half_fov", fov/2.);
-                post_processing_pipeline.set_float("fog","z_near", z_near);
-                post_processing_pipeline.set_mat4("fog","projectionMat", projectionMat);
-                post_processing_pipeline.set_mat4("fog","viewMat", cam_transform.world_pos().invert().unwrap());
-                post_processing_pipeline.set_vec3("fog", "camPos", cam_transform.position());
-                for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
-                    post_processing_pipeline.set_vec3("fog", "mainLightDir", (light_tf.world_pos() * Vector4::unit_z()).truncate());
-                    post_processing_pipeline.set_vec3("fog", "mainLightColor", light.main_color_as_vec());
-                    post_processing_pipeline.set_vec3("fog", "ambientColor", light.ambient_color_as_vec());
+                let mut out_tex = gl_camera.get_color_attachment().clone();
+                let fog_enabled = gl_camera.post_processing_effects.fog;
+
+                // Post processing step
+                let (post_processing_pipeline, io_node) = gl_camera.post_processing_pipeline();
+
+                if fog_enabled {
+                    post_processing_pipeline.set_float("fog", "aspect", aspect);
+                    post_processing_pipeline.set_float("fog", "half_fov", fov / 2.);
+                    post_processing_pipeline.set_float("fog", "z_near", z_near);
+                    post_processing_pipeline.set_mat4("fog", "projectionMat", projectionMat);
+                    post_processing_pipeline.set_mat4("fog", "viewMat", cam_transform.world_pos().invert().unwrap());
+                    post_processing_pipeline.set_vec3("fog", "camPos", cam_transform.position());
+
+                    for (light, light_tf) in iterate_over_component!(components; MainLight, Transform) {
+                        post_processing_pipeline.set_vec3("fog", "mainLightDir", (light_tf.world_pos() * Vector4::unit_z()).truncate());
+                        post_processing_pipeline.set_vec3("fog", "mainLightColor", light.main_color_as_vec());
+                        post_processing_pipeline.set_vec3("fog", "ambientColor", light.ambient_color_as_vec());
+                    }
                 }
 
-                post_processing_pipeline.compute("gamma_correction");
+                if let Some((i_node, o_node)) = &io_node {
+                    post_processing_pipeline.invalidate(i_node);
+                    post_processing_pipeline.compute(o_node);
+                    out_tex = post_processing_pipeline.get_texture(
+                        o_node,
+                        &Some(String::from("result"))
+                    );
+                }
 
-                let processed_tex = post_processing_pipeline.get_texture(
-                    "gamma_correction",
-                    &Some(String::from("processed_image"))
-                );
+
 
                 // Rendering to screen with UI
                 unsafe {
@@ -108,7 +118,7 @@ impl Renderer for DefaultOpenGlRenderer {
                     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
                     gl::ActiveTexture(gl::TEXTURE0);
-                    processed_tex.bind();
+                    out_tex.bind();
                     self.copy_shader.set_used();
                     self.copy_shader.set_mat4("modelMat", Transform::origin().world_pos());
                     self.copy_shader.set_int("tex", 0);

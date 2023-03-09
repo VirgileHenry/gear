@@ -343,7 +343,7 @@ impl ShaderProgram {
         unsafe {
             gl::BindImageTexture(
                 index as gl::types::GLuint,
-                image.get_id(),
+                image.unwrap_id(),
                 0,
                 gl::FALSE,
                 0,
@@ -359,7 +359,7 @@ impl ShaderProgram {
         unsafe {
             gl::BindImageTexture(
                 index as gl::types::GLuint,
-                image.get_id(),
+                image.unwrap_id(),
                 0,
                 gl::FALSE,
                 0,
@@ -375,7 +375,7 @@ impl ShaderProgram {
         unsafe {
             gl::BindImageTexture(
                 index as gl::types::GLuint,
-                image.get_id(),
+                image.unwrap_id(),
                 0,
                 gl::FALSE,
                 0,

@@ -21,7 +21,7 @@ struct ShaderPipelineNodeParam {
 /// In case of a compute shader multiple textures can be bound to the node
 /// those textures must be named in order to select them
 /// A frag shader has only one output texture and a framebuffer id
-enum NodeType {
+pub enum NodeType {
     Compute(ComputeShader),
     Render(ShaderProgram, GLuint, Texture2D),
 }
@@ -63,7 +63,7 @@ impl ShaderPipelineNode {
                 gl::FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT0,
                 gl::TEXTURE_2D,
-                texture.get_id(),
+                texture.unwrap_id(),
                 0,
             );
 
@@ -89,7 +89,7 @@ impl ShaderPipelineNode {
         }
     }
 
-    pub fn execute(&self, plane: &MeshRenderer, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
+    pub fn execute(&self, plane: &MeshRenderer, texture_map: &HashMap<String, ShaderPipelineNodeInput>, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
         unsafe {
             match self.node_type {
                 Compute(_) => self.compute(texture_map, pipeline_nodes),
@@ -98,7 +98,7 @@ impl ShaderPipelineNode {
         }
     }
 
-    unsafe fn render(&self, plane: &MeshRenderer, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
+    unsafe fn render(&self, plane: &MeshRenderer, texture_map: &HashMap<String, ShaderPipelineNodeInput>, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
 
         // Binding current node framebuffer
         let shader = match &self.node_type {
@@ -115,27 +115,25 @@ impl ShaderPipelineNode {
         // Setting shader parameters
         shader.set_used();
 
-
         let mut current_active_tex = 0;
 
         // Set up input textures
-        match texture_map {
-            ShaderPipelineNodeInput::Texture(name, tex) => {
-                gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
-                tex.bind();
-                shader.set_int(name, current_active_tex as i32);
-            },
-            ShaderPipelineNodeInput::Nodes(nodes) => {
-                for (name, (input_node_name, output_tex_name)) in nodes.into_iter() {
-                    let input_node = &pipeline_nodes.get(input_node_name).unwrap().0;
+        for (input_texture_name, map) in texture_map {
+            shader.set_int(input_texture_name, current_active_tex as i32);
+            match map {
+                ShaderPipelineNodeInput::Nodes(output_node_name, output_tex_name) => {
+                    let input_node = &pipeline_nodes.get(output_node_name).unwrap().0;
                     // set up input texture
                     gl::ActiveTexture(current_active_tex+gl::TEXTURE0);
                     input_node.get_texture(output_tex_name).bind();
-                    shader.set_int(name, current_active_tex as i32);
                     current_active_tex += 1;
                 }
-            },
-            _ => (),
+                ShaderPipelineNodeInput::Texture(output_texture) => {
+                    gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
+                    output_texture.bind();
+                    current_active_tex += 1;
+                }
+            }
         }
 
         self.bind_all_params(shader);
@@ -144,7 +142,7 @@ impl ShaderPipelineNode {
 
     }
 
-    pub unsafe fn compute(&self, texture_map: &ShaderPipelineNodeInput, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
+    pub unsafe fn compute(&self, texture_map: &HashMap<String, ShaderPipelineNodeInput>, pipeline_nodes: &HashMap<String, (ShaderPipelineNode, bool)>) {
 
         let mut current_active_tex: GLenum = 0;
 
@@ -160,23 +158,22 @@ impl ShaderPipelineNode {
         };
 
         // Set up input textures
-        match texture_map {
-            ShaderPipelineNodeInput::Texture(name, tex) => {
-                gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
-                tex.bind();
-                shader.set_int(name, current_active_tex as i32);
-            },
-            ShaderPipelineNodeInput::Nodes(nodes) => {
-                for (name, (input_node_name, output_tex_name)) in nodes.into_iter() {
-                    let input_node = &pipeline_nodes.get(input_node_name).unwrap().0;
+        for (input_texture_name, map) in texture_map {
+            shader.set_int(input_texture_name, current_active_tex as i32);
+            match map {
+                ShaderPipelineNodeInput::Nodes(output_node_name, output_tex_name) => {
+                    let input_node = &pipeline_nodes.get(output_node_name).unwrap().0;
                     // set up input texture
                     gl::ActiveTexture(current_active_tex+gl::TEXTURE0);
                     input_node.get_texture(output_tex_name).bind();
-                    shader.set_int(name, current_active_tex as i32);
                     current_active_tex += 1;
                 }
-            },
-            _ => (),
+                ShaderPipelineNodeInput::Texture(output_texture) => {
+                    gl::ActiveTexture(gl::TEXTURE0+current_active_tex);
+                    output_texture.bind();
+                    current_active_tex += 1;
+                }
+            }
         }
 
         self.bind_all_params(shader);
@@ -268,6 +265,10 @@ impl ShaderPipelineNode {
             Compute(shader) => shader,
             _ => panic!("This node is not a compute shader !"),
         }
+    }
+
+    pub fn get_node_type_mut(&mut self) -> &mut NodeType {
+        &mut self.node_type
     }
 
 }

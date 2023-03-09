@@ -53,6 +53,9 @@ impl ComputeShader {
         if let Some(tex) = self.read_write_textures.get(name) {
             return tex.clone();
         }
+        if let Some(tex) = self.read_textures.get(name) {
+            return tex.clone();
+        }
         panic!("Texture {name} not found");
     }
 

@@ -3,23 +3,23 @@ use std::fmt::{Display, Formatter};
 
 use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 
+use shader_pipeline_node::NodeType;
+
 use crate::{ComputeShader, Material, Mesh, MeshRenderer, ShaderProgram, Texture2D};
 use crate::pipeline::shader_pipeline_node::ShaderPipelineNode;
 
 mod shader_pipeline_node;
 
 pub enum ShaderPipelineNodeInput {
-    NotSet,
-
-    Texture(String, Texture2D),
-    // (texture name, node_name, name of the texture for the eventual compute shader node)
-    Nodes(HashMap<String, (String, Option<String>)>),
+    Texture(Texture2D),
+    // (node_name, name of the texture for the eventual compute shader node)
+    Nodes(String, Option<String>),
 }
 
 pub struct ShaderPipeline {
     // (NodeName -> (NodeObject, RequireUpdate))
     nodes: HashMap<String, (ShaderPipelineNode, bool)>,
-    links: HashMap<String, ShaderPipelineNodeInput>,
+    links: HashMap<String, HashMap<String, ShaderPipelineNodeInput>>,
     children: HashMap<String, Vec<String>>,
 
     mesh_renderer: MeshRenderer,
@@ -41,32 +41,18 @@ impl ShaderPipeline {
 
     pub fn add_render_node(&mut self, node_name: &str, dimensions: (i32, i32), shader: ShaderProgram) {
         self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_frag(dimensions, shader), true));
-        self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
+        self.links.insert(node_name.parse().unwrap(), Default::default());
     }
 
     pub fn add_compute_node(&mut self, node_name: &str, compute_shader: ComputeShader) {
         self.nodes.insert(node_name.parse().unwrap(), (ShaderPipelineNode::new_compute(compute_shader), true));
-        self.links.insert(node_name.parse().unwrap(), ShaderPipelineNodeInput::NotSet);
+        self.links.insert(node_name.parse().unwrap(), Default::default());
     }
 
     pub fn link_render_to_node(&mut self, output_node_name: &str, input_tex_name: &str, input_node_name: &str) {
-        match self.links.get_mut(input_node_name).expect(&*format!("Node {} not found", input_node_name)) {
-            ShaderPipelineNodeInput::Nodes(links) => {
-                links.insert(
-                    input_tex_name.parse().unwrap(),
-                    (output_node_name.parse().unwrap(), None)
-                );
-            }
-            ShaderPipelineNodeInput::NotSet => {
-                let mut hm = HashMap::<String, (String, Option<String>)>::new();
-                hm.insert(
-                    input_tex_name.parse().unwrap(),
-                    (output_node_name.parse().unwrap(), None),
-                );
-                self.links.insert(input_node_name.parse().unwrap(), ShaderPipelineNodeInput::Nodes(hm));
-            }
-            _ => panic!("The node {} only accept textures as input", input_node_name)
-        }
+        self.links.get_mut(input_node_name)
+            .expect(&*format!("Node {} not found", input_node_name))
+            .insert(input_tex_name.to_string(), ShaderPipelineNodeInput::Nodes(output_node_name.to_string(), None));
         match self.children.get_mut(output_node_name) {
             Some(vec) => { vec.push(input_node_name.to_string()) },
             None => {
@@ -76,26 +62,9 @@ impl ShaderPipeline {
     }
 
     pub fn link_compute_to_node(&mut self, output_node_name: &str, output_tex_name: &str, input_tex_name: &str, input_node_name: &str) {
-        match self.links.get_mut(input_node_name).expect(&*format!("Node {} not found", input_node_name)) {
-            ShaderPipelineNodeInput::Nodes(links) => {
-                links.insert(
-                    input_tex_name.parse().unwrap(),
-                    (output_node_name.parse().unwrap(), Some(output_tex_name.to_string()))
-                );
-            }
-            ShaderPipelineNodeInput::NotSet => {
-                let mut hm = HashMap::<String, (String, Option<String>)>::new();
-                hm.insert(
-                    input_tex_name.parse().unwrap(),
-                    (output_node_name.parse().unwrap(), Some(output_tex_name.to_string())),
-                );
-                self.links.insert(
-                    input_node_name.parse().unwrap(),
-                    ShaderPipelineNodeInput::Nodes(hm)
-                );
-            }
-            _ => panic!("The node {} only accept textures as input", input_node_name)
-        }
+        self.links.get_mut(input_node_name)
+            .expect(&*format!("Node {} not found", input_node_name))
+            .insert(input_tex_name.to_string(), ShaderPipelineNodeInput::Nodes(output_node_name.to_string(), Some(output_tex_name.to_string())));
         match self.children.get_mut(output_node_name) {
             Some(vec) => { vec.push(input_node_name.to_string()) },
             None => {
@@ -105,26 +74,23 @@ impl ShaderPipeline {
     }
 
     pub fn set_input_texture(&mut self, tex_name: &str, texture: Texture2D, input_node_name: &str) {
-        match self.links.get_mut(input_node_name).expect(&*format!("Node {} not found", input_node_name)) {
-            ShaderPipelineNodeInput::NotSet | ShaderPipelineNodeInput::Texture(_, _) => {
-                self.links.insert(input_node_name.parse().unwrap(), ShaderPipelineNodeInput::Texture(tex_name.parse().unwrap(), texture));
-            }
-            _ => panic!("The node {} doesn't accept textures as input", input_node_name)
-        }
+        self.links.get_mut(input_node_name)
+            .expect(&*format!("Node {} not found", input_node_name))
+            .insert(tex_name.to_string(), ShaderPipelineNodeInput::Texture(texture));
     }
 
 
     pub fn compute(&mut self, shader_node_name: &str)  {
-        // making sure that each node is counted with the right order
-        match self.links.remove(shader_node_name).unwrap() {
-            ShaderPipelineNodeInput::Nodes(hm) => {
-                for (_, (node_name, _)) in hm.iter() {
-                    self.compute(&node_name);
-                }
-                self.links.insert(shader_node_name.to_string(), ShaderPipelineNodeInput::Nodes(hm));
+        let mut node_hm = self.links.remove(shader_node_name).unwrap();
+        for (_, node_input) in &mut node_hm {
+            match node_input {
+                ShaderPipelineNodeInput::Nodes(output_node_name, _) => {
+                    self.compute(&output_node_name);
+                },
+                _ => (),
             }
-            input => { self.links.insert(shader_node_name.parse().unwrap(), input); }
         }
+        self.links.insert(shader_node_name.to_string(), node_hm);
 
         let require_update = self.node_require_update_mut(shader_node_name);
         if !*require_update {
@@ -198,20 +164,6 @@ impl ShaderPipeline {
 
     pub fn set_mat4(&mut self, node_name: &str, name: &str, val: Matrix4<f32>) {
         self.get_node_mut(node_name).set_mat4(name, val);
-    }
-
-    pub fn display(&self, shader_node_name: &str) {
-        match self.links.get(shader_node_name).unwrap() {
-            ShaderPipelineNodeInput::Nodes(hm) => {
-                for (_, (node_name, _)) in hm.iter() {
-                    self.display(&node_name);
-                    println!("{shader_node_name} has input node {node_name}")
-                }
-            }
-            _input => {
-                println!("{shader_node_name} has an input texture");
-            }
-        }
     }
 
 }

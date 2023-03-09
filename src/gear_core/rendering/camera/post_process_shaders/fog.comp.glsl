@@ -4,7 +4,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (rgba32f) writeonly uniform image2D fog_tex;
+layout (rgba32f) writeonly uniform image2D result;
 layout (rgba32f) readonly uniform image2D color_out;
 uniform sampler2D input_tex;
 
@@ -80,6 +80,5 @@ void main(void)
     float ndc = d * 2.0 - 1.0;
     float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
     vec3 color = imageLoad(color_out, ivec2(gl_GlobalInvocationID.xy)).xyz;
-    imageStore(fog_tex, ivec2(gl_GlobalInvocationID.xy), vec4(applyFog3(color, linearDepth, camPos, front.xyz, -mainLightDir), 0.));
-    imageStore(fog_tex, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1.));
+    imageStore(result, ivec2(gl_GlobalInvocationID.xy), vec4(applyFog3(color, linearDepth, camPos, front.xyz, -mainLightDir), 0.));
 }

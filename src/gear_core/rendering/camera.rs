@@ -3,6 +3,7 @@ extern crate gl;
 
 use foundry::*;
 use gl::types::GLuint;
+use glfw::WindowEvent::Pos;
 
 use post_processing_pipeline::create_post_processing_pipeline;
 
@@ -22,6 +23,13 @@ const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
 );
 */
 
+#[derive(Copy, Clone)]
+pub struct PostProcessingEffects {
+    pub bloom: bool,
+    pub fog: bool,
+    pub gamma: bool,
+}
+
 pub struct CameraComponent {
     field_of_view_y: f32,
     znear: f32,
@@ -39,7 +47,8 @@ pub struct GlCamera {
     framebuffer_id: GLuint,
     show_wireframe: bool, // todo : better way to handle camera render options
 
-    post_processing_pipeline: ShaderPipeline,
+    post_processing_pipeline: (ShaderPipeline, Option<(String, String)>),
+    pub post_processing_effects: PostProcessingEffects,
 }
 
 impl GlCamera {
@@ -86,8 +95,11 @@ impl GlCamera {
         self.show_wireframe = !self.show_wireframe;
     }
 
-    pub fn post_processing_pipeline(&mut self) -> &mut ShaderPipeline {
+    pub fn post_processing_pipeline(&mut self) -> &mut (ShaderPipeline, Option<(String, String)>) {
         &mut self.post_processing_pipeline
+    }
+    pub fn recreate_post_processing_pipeline(&mut self) {
+        self.post_processing_pipeline = create_post_processing_pipeline(&self.post_processing_effects, &self.get_color_attachment(), &self.get_depth_attachment());
     }
 }
 
@@ -110,7 +122,7 @@ impl CameraComponent {
                 gl::FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT0,
                 gl::TEXTURE_2D,
-                color_text.get_id(),
+                color_text.unwrap_id(),
                 0,
             );
 
@@ -118,7 +130,7 @@ impl CameraComponent {
                 gl::FRAMEBUFFER,
                 gl::DEPTH_ATTACHMENT,
                 gl::TEXTURE_2D,
-                depth_text.get_id(),
+                depth_text.unwrap_id(),
                 0,
             );
 
@@ -130,6 +142,11 @@ impl CameraComponent {
         }
 
         println!("Create camera");
+        let post_processing_effects = PostProcessingEffects{
+            bloom: true,
+            gamma: true,
+            fog: true,
+        };
         // assign 
         self.gl_camera = Some(GlCamera {
             perspective_matrix: cgmath::perspective(cgmath::Deg(self.field_of_view_y), dimensions.0 as f32 / dimensions.1 as f32, self.znear, self.zfar),
@@ -138,7 +155,9 @@ impl CameraComponent {
             depth_attachment: depth_text,
             framebuffer_id: id,
             show_wireframe: false,
-            post_processing_pipeline: create_post_processing_pipeline(&color_text, &depth_text)
+
+            post_processing_pipeline: create_post_processing_pipeline(&post_processing_effects, &color_text, &depth_text),
+            post_processing_effects,
         });
 
         match &mut self.gl_camera {
@@ -156,7 +175,7 @@ impl CameraComponent {
                 cam_buffer.color_attachment.resize(dimensions);
                 cam_buffer.depth_attachment.resize(dimensions);
 
-                resize_post_processing_pipeline(&mut cam_buffer.post_processing_pipeline, dimensions);
+                resize_post_processing_pipeline(&cam_buffer.post_processing_effects.clone(), &mut cam_buffer.post_processing_pipeline.0, dimensions);
 
             },
             None => { self.generate_gl_cam(dimensions); },
