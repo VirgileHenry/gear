@@ -141,7 +141,6 @@ impl CameraComponent {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0); // unbind the framebuffer until needed
         }
 
-        println!("Create camera");
         let post_processing_effects = PostProcessingEffects{
             bloom: true,
             gamma: true,

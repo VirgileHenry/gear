@@ -3,6 +3,9 @@ use crate::gear_core::*;
 use std::{time::{Instant, Duration}, any::Any};
 
 
+const GL_SYSTEM: i32 = -100;
+
+
 pub struct Engine {
     world: World,
     main_timer: Duration,
@@ -23,7 +26,7 @@ impl Engine {
         match GlGameWindow::new(renderer, dimensions) {
             Ok(game_window) => {
                 let window_system = System::new(Box::new(game_window), UpdateFrequency::PerFrame);
-                self.world.register_system(window_system, 0);
+                self.world.register_private_system(window_system, GL_SYSTEM);
             },
             Err(e) => println!("[GEAR ENGINE] => [GL WINDOW] => Unable to add a window to the engine : {:?}", e),
         };
@@ -33,14 +36,14 @@ impl Engine {
     }
 
     pub fn get_gl_window(&self) -> Option<&GlGameWindow> {
-        match self.world.get_system(0) {
+        match self.world.get_private_system(GL_SYSTEM) {
             Some(system) => (system.get_updatable() as &dyn Any).downcast_ref::<GlGameWindow>(),
             None => None,
         }
     }
 
     pub fn get_gl_window_mut(&mut self) -> Option<&mut GlGameWindow> {
-        match self.world.get_system_mut(0) {
+        match self.world.get_private_system_mut(GL_SYSTEM) {
             Some(system) => system.get_updatable_mut().as_any_mut().downcast_mut::<GlGameWindow>(),
             None => None,
         }
