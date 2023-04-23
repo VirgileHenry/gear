@@ -4,6 +4,7 @@ extern crate cgmath;
 extern crate gl;
 
 #[repr(C)]
+#[derive(Debug, Clone)]
 pub struct Vertex {
     position: cgmath::Vector3::<f32>,
     normal: cgmath::Vector3::<f32>,
