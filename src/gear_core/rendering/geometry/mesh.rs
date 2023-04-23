@@ -8,7 +8,7 @@ use crate::gear_core::rendering::{
 };
 use crate::gear_core::resources::{load_static_mesh, MeshLoadingError};
 
-
+#[derive(Debug, Clone)]
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub triangles: Vec<u32>,
