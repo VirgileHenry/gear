@@ -142,5 +142,15 @@ impl Transform {
         self.rotation * direction
     }
 
+    pub fn transform(&self, point: Vector3<f32>) -> Vector3<f32> {
+        let v4 = self.world_pos() * Vector4::new(point.x, point.y, point.z, 1.0);
+        Vector3::new(v4.x, v4.y, v4.z)
+    }
+
+    pub fn inverse_transform(&self, point: Vector3<f32>) -> Vector3<f32> {
+        let v4 = self.world_pos().invert().unwrap() * Vector4::new(point.x, point.y, point.z, 1.0);
+        Vector3::new(v4.x, v4.y, v4.z)
+    }
+
 
 }
