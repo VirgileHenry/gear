@@ -1,0 +1,3 @@
+[submodule "deps/foundry"]
+	path = deps/foundry
+	url = https://github.com/VirgileHenry/Foundry
