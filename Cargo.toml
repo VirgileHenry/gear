@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-foundry = { path = "../Foundry" }
+foundry = { path = "deps/foundry" }
 glfw = "0.48.0"
 gl = "0.14.0"
 cgmath = "0.18.0"

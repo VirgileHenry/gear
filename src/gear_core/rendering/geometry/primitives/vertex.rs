@@ -1,11 +1,10 @@
 use std::array::TryFromSliceError;
 
-use cgmath::Vector3;
-
 extern crate cgmath;
 extern crate gl;
 
 #[repr(C)]
+#[derive(Debug, Clone)]
 pub struct Vertex {
     position: cgmath::Vector3::<f32>,
     normal: cgmath::Vector3::<f32>,
@@ -36,6 +35,9 @@ impl Vertex {
         ))
     }
 
+    pub fn position(&self) -> cgmath::Vector3<f32> {
+        self.position
+    }
 
     pub fn vertex_attrib_pointer() {
         // in here because this depends on the vertex data type !
