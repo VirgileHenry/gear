@@ -144,7 +144,7 @@ impl CameraComponent {
         let post_processing_effects = PostProcessingEffects{
             bloom: true,
             gamma: true,
-            fog: true,
+            fog: false,
         };
         // assign 
         self.gl_camera = Some(GlCamera {

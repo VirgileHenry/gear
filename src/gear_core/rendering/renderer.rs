@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cgmath::{SquareMatrix, Vector3, Vector4};
+use cgmath::{dot, SquareMatrix, Vector3, Vector4};
 use foundry::*;
 use gl::types::*;
 
@@ -23,6 +23,7 @@ use crate::gear_core::camera::GlCamera;
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
     fn set_dimensions(&mut self, dimensions: (i32, i32));
+    fn recompile(&mut self);
 }
 
 pub struct DefaultOpenGlRenderer {
@@ -38,7 +39,7 @@ pub struct DefaultOpenGlRenderer {
 impl DefaultOpenGlRenderer {
     pub fn new(window_dimensions: (i32, i32)) -> DefaultOpenGlRenderer {
 
-        let copy_shader = ShaderProgram::simple_program(COPY_FRAG_SHADER, COPY_VERT_SHADER)
+        let copy_shader = ShaderProgram::simple_recompilable_program(&COPY_FRAG_SHADER, &COPY_VERT_SHADER)
             .expect("Error while generating internal (copy) shader");
         let mesh = Mesh::plane(Vector3::unit_x()*2., Vector3::unit_y()*2.);
         let mesh_renderer = MeshRenderingBuffers::from(&mesh);
@@ -46,7 +47,7 @@ impl DefaultOpenGlRenderer {
         use super::shaders::shaders_files::{DEFAULT_VERT_SHADER, MISSING_FRAG_SHADER};
         DefaultOpenGlRenderer {
             shader_programs: HashMap::new(),
-            missing_shader_program: ShaderProgram::simple_program(MISSING_FRAG_SHADER, DEFAULT_VERT_SHADER)
+            missing_shader_program: ShaderProgram::simple_recompilable_program(&MISSING_FRAG_SHADER, &DEFAULT_VERT_SHADER)
                 .expect("[GEAR ENGINE] -> [RENDERER] -> Unable to compile default shaders : "),
             render_quad: mesh_renderer,
             copy_shader,
@@ -58,10 +59,10 @@ impl DefaultOpenGlRenderer {
     pub fn register_shader_program(&mut self, name: &str, program: ShaderProgram) {
         self.shader_programs.insert(name.to_string(), program);
     }
+
 }
 
 impl Renderer for DefaultOpenGlRenderer {
-
     fn render(&self, components: &mut ComponentTable) {
 
         self.render_scene(components);
@@ -111,7 +112,6 @@ impl Renderer for DefaultOpenGlRenderer {
                 }
 
 
-
                 // Rendering to screen with UI
                 unsafe {
                     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -133,6 +133,12 @@ impl Renderer for DefaultOpenGlRenderer {
 
     fn set_dimensions(&mut self, dimensions: (i32, i32)) {
         self.window_dimensions = dimensions;
+    }
+
+    fn recompile(&mut self) {
+        for (_, shader) in &mut self.shader_programs {
+            shader.recompile();
+        }
     }
 
 }
@@ -251,4 +257,3 @@ impl DefaultOpenGlRenderer {
     }
 
 }
-

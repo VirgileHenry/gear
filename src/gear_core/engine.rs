@@ -1,7 +1,9 @@
-use foundry::*;
-use crate::gear_core::*;
-use std::{time::{Instant, Duration}, any::Any};
+use std::{any::Any, time::{Duration, Instant}};
 
+use foundry::*;
+pub use glfw::CursorMode;
+
+use crate::gear_core::*;
 
 const GL_SYSTEM: i32 = -100;
 
@@ -80,7 +82,7 @@ impl Engine {
     pub fn handle_message(&mut self, message: EngineMessage) {
         match message {
             EngineMessage::StopEngine => self.engine_state = EngineState::RequestingStop,
-
+            EngineMessage::RecompileSource => self.get_gl_window_mut().unwrap().get_renderer_mut().recompile(),
             _ => {}
         }
     }
@@ -103,6 +105,7 @@ pub enum EngineState {
 pub enum EngineMessage {
     None,
     StopEngine,
+    RecompileSource,
     GlWindowMessage(GlWindowMessage),
 }
 
@@ -111,8 +114,6 @@ pub enum GlWindowMessage {
     SetFullScreen(FullScreenModes),
     ResizeWindow((i32, i32)),
 }
-
-pub use glfw::CursorMode;
 
 // elsewhere ?
 pub enum FullScreenModes {

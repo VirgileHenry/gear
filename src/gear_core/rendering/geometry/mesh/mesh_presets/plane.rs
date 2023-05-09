@@ -1,4 +1,5 @@
 use cgmath::{InnerSpace, Vector3};
+
 use crate::{Mesh, Vertex};
 
 impl Mesh {
@@ -35,6 +36,7 @@ impl Mesh {
         Mesh {
             vertices,
             triangles,
+            bounding_box: None,
         }
     }
 }

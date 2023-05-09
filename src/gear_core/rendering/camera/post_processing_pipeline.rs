@@ -79,7 +79,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
         pipeline.add_compute_node("fog", fog_compute_shader);
         pipeline.set_input_texture("input_tex", depth_tex.clone(), "fog");
         pipeline.set_float("fog", "a", 0.0003);
-        pipeline.set_float("fog", "b", 0.003);
+        pipeline.set_float("fog", "b", 0.0003);
         io_nodes = Some((String::from("fog"), String::from("fog")));
     }
 
@@ -167,7 +167,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
     if post_processing_effects.bloom {
         let additive_source: &str = include_str!("post_process_shaders/additive_blender.comp.glsl");
         let additive_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
-        let mut additive_compute_shader = ComputeShader::new(additive_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut additive_compute_shader = ComputeShader::new(additive_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
 
         additive_compute_shader.add_write_texture("result", additive_output_tex);
         pipeline.add_compute_node("additive_blender", additive_compute_shader);
@@ -198,7 +198,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
     if post_processing_effects.gamma {
         let gamma_correction_source: &str = include_str!("post_process_shaders/gamma_correction.comp.glsl");
         let gamma_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
-        let mut gamma_correction_compute = ComputeShader::new(gamma_correction_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut gamma_correction_compute = ComputeShader::new(gamma_correction_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
         gamma_correction_compute.add_write_texture("result", gamma_output_tex);
         pipeline.add_compute_node("gamma_correction", gamma_correction_compute);
 

@@ -2,16 +2,39 @@ extern crate cgmath;
 extern crate gl;
 
 
+use std::{env, fs};
 use std::ffi::CString;
-use std::fs;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::id;
 
 pub use compute_shader::*;
 
 use crate::Texture2D;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
+pub struct ShaderSource {
+    shader_path : PathBuf,
+}
+
+impl ShaderSource {
+    pub fn new(shader_path: &'static str) -> ShaderSource {
+        let current_file_path = Path::new(file!());
+        let data_path = current_file_path.parent().unwrap().join("shaders/").join(shader_path);
+        ShaderSource { shader_path: data_path }
+    }
+
+    pub fn new_from_path(shader_path: PathBuf) -> ShaderSource {
+        ShaderSource { shader_path }
+    }
+}
+
+#[derive(Clone)]
 pub struct ShaderProgram {
     id: gl::types::GLuint,
+    // Vertex shader path / Fragment shader path
+    source_code: Option<(ShaderSource, ShaderSource)>,
 }
 
 // used as a ref to a shader program.
@@ -31,6 +54,24 @@ impl ShaderProgramRef {
 }
 
 impl ShaderProgram {
+
+    pub fn recompile(&mut self) {
+        if let Some((vertex_path, fragment_path)) = &self.source_code {
+
+            unsafe { gl::DeleteProgram(self.id); }
+
+            let mut file = File::open(&vertex_path.shader_path).expect("Unable to open the file");
+            let mut vertex_source = String::new();
+            file.read_to_string(&mut vertex_source).expect("Unable to read the file");
+
+            let mut file = File::open(&fragment_path.shader_path).expect("Unable to open the file");
+            let mut fragment_source = String::new();
+            file.read_to_string(&mut fragment_source).expect("Unable to read the file");
+
+            self.id = Self::compile_shader(&*fragment_source, &*vertex_source).expect("Could not recompile shader");
+
+        }
+    }
 
     // todo : separate compute shaders and vert/frag shaders
     /// Create a compute shader
@@ -87,10 +128,10 @@ impl ShaderProgram {
         }
 
         // return the program
-        Ok(ShaderProgram { id: program_id })
+        Ok(ShaderProgram { id: program_id , source_code: None})
     }
 
-    pub fn simple_program(frag_source: &str, vert_source: &str) -> Result<ShaderProgram, String> {
+    fn compile_shader(frag_source: &str, vert_source: &str) -> Result<u32, String> {
         // create a shader program
         let program_id = unsafe { gl::CreateProgram() };
 
@@ -110,7 +151,7 @@ impl ShaderProgram {
                 return Err(s);
             },
         };
-        unsafe { 
+        unsafe {
             gl::AttachShader(program_id, frag_shader.id());
             gl::AttachShader(program_id, vert_shader.id());
         }
@@ -129,9 +170,9 @@ impl ShaderProgram {
             unsafe {
                 gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
             }
-        
+
             let error = create_whitespace_cstring_with_len(len as usize);
-        
+
             unsafe {
                 gl::GetProgramInfoLog(
                     program_id,
@@ -140,24 +181,26 @@ impl ShaderProgram {
                     error.as_ptr() as *mut gl::types::GLchar
                 );
             }
-        
+
             return Err(error.to_string_lossy().into_owned());
         }
 
         // now the program is linked, we can unbind shaders
-        unsafe { 
+        unsafe {
             gl::DetachShader(program_id, frag_shader.id());
             gl::DetachShader(program_id, vert_shader.id());
         }
+        return Ok(program_id);
+    }
 
-        // return the program
-        Ok(ShaderProgram { id: program_id })
+    pub fn simple_program(frag_source: &str, vert_source: &str) -> Result<ShaderProgram, String> {
+        Ok(ShaderProgram { id: Self::compile_shader(frag_source, vert_source).expect("Could not compile shader"), source_code: None })
     }
 
     pub fn from_shaders(shaders: &[Shader]) -> Result<ShaderProgram, String> {
         // create a shader program
         let program_id = unsafe { gl::CreateProgram() };
-        
+
         // bind given shaders to it
         for shader in shaders {
             unsafe { gl::AttachShader(program_id, shader.id()); }
@@ -177,9 +220,9 @@ impl ShaderProgram {
             unsafe {
                 gl::GetProgramiv(program_id, gl::INFO_LOG_LENGTH, &mut len);
             }
-        
+
             let error = create_whitespace_cstring_with_len(len as usize);
-        
+
             unsafe {
                 gl::GetProgramInfoLog(
                     program_id,
@@ -188,7 +231,7 @@ impl ShaderProgram {
                     error.as_ptr() as *mut gl::types::GLchar
                 );
             }
-        
+
             return Err(error.to_string_lossy().into_owned());
         }
 
@@ -198,7 +241,17 @@ impl ShaderProgram {
         }
 
         // return the program
-        Ok(ShaderProgram { id: program_id })
+        Ok(ShaderProgram { id: program_id , source_code: None})
+    }
+
+    pub fn simple_recompilable_program(fragment_path: &ShaderSource, vertex_path: &ShaderSource) -> Result<ShaderProgram, String> {
+        let vertex_source = fs::read_to_string(&vertex_path.shader_path).expect(&format!("Unable to read the file : {:?}", &vertex_path.shader_path))
+            .replace("\r", "\n");
+
+        let fragment_source = fs::read_to_string(&fragment_path.shader_path).expect(&format!("Unable to read the file : {:?}", &fragment_path.shader_path))
+            .replace("\r", "\n");
+
+        Ok(ShaderProgram { id: Self::compile_shader(&fragment_source, &vertex_source).expect("Could not compile shader"), source_code: Some((vertex_path.clone(), fragment_path.clone())) })
     }
 
     pub fn set_used(&self) {

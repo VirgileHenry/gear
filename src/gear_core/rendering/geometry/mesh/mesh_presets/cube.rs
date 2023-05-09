@@ -1,3 +1,5 @@
+use cgmath::Vector3;
+
 use crate::{Mesh, Vertex};
 
 impl Mesh {
@@ -50,6 +52,7 @@ impl Mesh {
                 20, 22, 21, //left
                 20, 23, 22,
             ],
+            bounding_box: Some([Vector3::new(-half_side_size, -half_side_size, -half_side_size), Vector3::new(half_side_size, half_side_size, half_side_size)])
         }
     }
 }

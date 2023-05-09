@@ -1,4 +1,7 @@
+use cgmath::Vector3;
+
 use crate::{Material, Mesh, MeshRenderingBuffers, ShaderProgram};
+use crate::gear_core::rendering_buffer::BoundingBox;
 
 pub struct MeshRenderer {
     pub material: Material,
@@ -25,5 +28,8 @@ impl MeshRenderer {
 
     }
 
+    pub fn get_bounding_box(&self) -> &Option<BoundingBox> {
+        &self.rendering_buffers.bounding_box
+    }
 
 }

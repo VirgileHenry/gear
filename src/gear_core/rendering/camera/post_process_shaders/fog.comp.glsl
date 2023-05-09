@@ -26,7 +26,7 @@ uniform vec3 ambientColor;
 vec3 applyFog( in vec3  rgb, in float distance ) // camera to point distance
 {
     float fogAmount = 1.0 - exp( -distance*b );
-    vec3  fogColor  = vec3(0.5,0.6,0.7);
+    vec3  fogColor  = vec3(0.5,0.7,0.8);
     return mix( rgb, fogColor, fogAmount );
 }
 
@@ -73,12 +73,31 @@ void main(void)
     float h = tan(half_fov*PI/180.)*z_near;
     float x = h * aspect;
 
-    vec4 rayb = projectionMat * vec4((uv-vec2(.5))*vec2(x, h)*2., -z_near, 1.);
-    vec4 front = normalize(inverse(viewMat) * vec4(rayb.xyz, 0.));
+    vec4 raya = inverse(projectionMat) * vec4((uv-.5)*2., 0., 1.);
+    vec3 front = normalize(inverse(mat3(viewMat)) * raya.xyz);
 
     float d = texture(input_tex, uv).r;
     float ndc = d * 2.0 - 1.0;
     float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
+
+    float to_water_fact = clamp(-camPos.y/front.y/linearDepth, 0., 1.);
+
+    float sun_alignment = clamp(dot(front, -mainLightDir), 0., 1.);
+
     vec3 color = imageLoad(color_out, ivec2(gl_GlobalInvocationID.xy)).xyz;
-    imageStore(result, ivec2(gl_GlobalInvocationID.xy), vec4(applyFog3(color, linearDepth, camPos, front.xyz, -mainLightDir), 0.));
+    vec3 final_fog = color;
+    float underwater_dst = linearDepth;
+    if (front.y > 0.) {
+        underwater_dst = min(linearDepth * to_water_fact, underwater_dst);
+    }
+    if (camPos.y < 0.) {
+        vec3 light_blue = vec3(0.05, 0.1, 0.5);
+        vec3 deep_blue = vec3(0.003, 0.009, 0.03);
+        vec3 blue = mix(light_blue, deep_blue, smoothstep(0., -300., camPos.y + front.y * 10.));
+        final_fog = mix(final_fog, blue, 1.-exp(- .02 * underwater_dst));
+    } else {
+        final_fog = applyFog3(final_fog, linearDepth, camPos, front.xyz, -mainLightDir);
+    }
+
+    imageStore(result, ivec2(gl_GlobalInvocationID.xy), vec4(final_fog, 0.));
 }

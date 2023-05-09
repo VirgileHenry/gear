@@ -26,7 +26,7 @@ fn main() {
     /* Pipeline set up */
     let mut pipeline = ShaderPipeline::new();
 
-    pub static COMPUTE_PERLIN: &str = include_str!("test_pipeline_with_compute/compute_perlin.comp.glsl");
+    pub static COMPUTE_PERLIN: ShaderSource = ShaderSource::new("test_pipeline_with_compute/compute_perlin.comp.glsl");
     static PERLIN_NODE: &str = "perlin";
     let mut compute_perlin = ComputeShader::new(COMPUTE_PERLIN, (1000, 1000, 1));
     compute_perlin.add_read_write_texture("perlin_texture", Texture2D::new_from_presets((1000, 1000), TexturePresets::pipeline_default(), None));
@@ -34,7 +34,7 @@ fn main() {
     pipeline.add_compute_node(PERLIN_NODE, compute_perlin);
     pipeline.set_float(PERLIN_NODE, "time", 1.0);
 
-    pub static COMPUTE_COPY: &str = include_str!("test_pipeline_with_compute/copy.comp.glsl");
+    pub static COMPUTE_COPY: ShaderSource = ShaderSource::new("test_pipeline_with_compute/copy.comp.glsl");
     static COPY_NODE: &str = "copy";
     let mut compute_copy = ComputeShader::new(COMPUTE_COPY, (1000, 1000, 1));
     compute_copy.add_write_texture("copy_texture", Texture2D::new_from_presets((1000, 1000), TexturePresets::pipeline_default(), None));
