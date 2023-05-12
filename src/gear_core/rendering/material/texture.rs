@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::ffi::c_void;
 use std::sync::Mutex;
 
-use cgmath::Vector2;
 use gl::types::{GLenum, GLint, GLuint};
 use image::RgbaImage;
 
@@ -132,7 +131,6 @@ pub struct Texture2D {
     dimensions: (i32, i32),
     presets: TexturePresets,
 }
-const SIZE_FFT_h0_GPU: usize = (256+1) * (256+1);
 
 impl Texture2D {
     pub fn new(dimensions: (i32, i32)) -> Self {
@@ -180,7 +178,7 @@ impl Texture2D {
         self.get_opengl_id().unwrap()
     }
 
-    pub fn load_from_vec(data:  [Vector2<f32>; SIZE_FFT_h0_GPU], dimensions: (i32, i32), presets: TexturePresets) -> Self {
+    pub fn load_from_vec(data: Vec<f32>, dimensions: (i32, i32), presets: TexturePresets) -> Self {
         let mut opengl_id = 0;
         unsafe {
             gl::GenTextures(1, &mut opengl_id);
