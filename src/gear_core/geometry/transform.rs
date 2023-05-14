@@ -1,6 +1,7 @@
 use cgmath::*;
 use refbox::{RefBox, Ref, BorrowError,};
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Transform {
     position: Vector3<f32>,
     rotation: Quaternion<f32>,
@@ -48,8 +49,8 @@ impl Transform {
                 match &self.parent_world_pos {
                     Some(parent_ref) => {
                         match parent_ref.try_borrow_mut() {
-                            Ok(parent_matrix) => {
-                                *world_pos = *parent_matrix * *world_pos;
+                            Ok(_parent_matrix) => {
+                                // *world_pos = *parent_matrix * *world_pos;
                             }
                             Err(e) => {
                                 match e {
@@ -74,7 +75,10 @@ impl Transform {
 
     pub fn set_parent(&mut self, parent: Option<&Transform>) {
         match parent {
-            Some(parent) => self.parent_world_pos = Some(parent.get_world_pos_ref()),
+            Some(parent) => {
+                self.parent_world_pos = Some(parent.get_world_pos_ref());
+                self.recompute_world_pos();
+            },
             None => self.parent_world_pos = None,
         }
     }
@@ -132,9 +136,10 @@ impl Transform {
     }
 
     pub fn world_pos(&self) -> Matrix4<f32> {
-        match self.world_pos.try_borrow_mut() {
-            Ok(world_pos) => *world_pos,
-            Err(_) => panic!("[GEAR ENGINE] -> [TRANSFORM] -> Unable to get world pos, matrix already in use."),
+        match (self.world_pos.try_borrow_mut(), &self.parent_world_pos) {
+            (Ok(world_pos), None) => *world_pos,
+            (Ok(world_pos), Some(parent)) => *parent.try_borrow_mut().unwrap() * *world_pos,
+            _ => panic!("[GEAR ENGINE] -> [TRANSFORM] -> Unable to get world pos, matrix already in use."),
         }
     }
 

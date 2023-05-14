@@ -11,7 +11,7 @@ pub enum MeshLoadingError {
 
 pub fn load_static_mesh(path: &str) -> Result<Mesh, MeshLoadingError> {
     let mut reader = BufReader::new(
-        match File::open(format!("models/{}", path)) {
+        match File::open(path) {
             Ok(file) => file,
             Err(_) => return Err(MeshLoadingError::FileNotFound),
         }
