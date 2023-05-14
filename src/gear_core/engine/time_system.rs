@@ -23,6 +23,10 @@ impl GlobalTime {
         self.delta
     }
 
+    pub fn set_delta(&mut self, time: f32) {
+        self.time = time;
+    }
+
     pub fn add_delta_time(&mut self, delta: f32) {
         self.time+=delta;
         self.delta = delta;
