@@ -1,4 +1,5 @@
 #version 330 core
+#define MAX_POINT_LIGHT_COUNT 10
 
 // object color
 uniform vec3 color;
@@ -8,6 +9,11 @@ uniform vec3 mainLightDir;
 uniform vec3 mainLightColor;
 // user values
 uniform vec3 camPos;
+
+uniform int lightCount;
+uniform vec3 lightCol[MAX_POINT_LIGHT_COUNT];
+uniform vec3 lightPos[MAX_POINT_LIGHT_COUNT];
+
 
 in VS_OUTPUT {
     vec3 Position;
@@ -25,6 +31,12 @@ void main()
     // direct lighting
     vec3 normal = normalize(IN.Normal);
     vec3 diffuse = max(dot(normal, mainLightDir), 0.0) * mainLightColor;
+    for (int i = 0; i < lightCount; ++i) {
+        vec3 dir = lightPos[i]-IN.Position;
+        float dist = length(dir);
+        dir/=dist;
+        diffuse += max(dot(normal, dir), 0.0) / dist / dist * lightCol[i] ;
+    }
 
     // specular lighting
     float specularStrength = 0.5f;

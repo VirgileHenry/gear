@@ -1,3 +1,5 @@
-pub(crate) mod light;
+pub use light::*;
 
-pub use light::MainLight;
+pub(crate) mod light;
+pub mod light_system;
+
