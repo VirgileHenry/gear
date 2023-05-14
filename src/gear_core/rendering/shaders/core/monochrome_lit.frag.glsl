@@ -35,7 +35,8 @@ void main()
         vec3 dir = lightPos[i]-IN.Position;
         float dist = length(dir);
         dir/=dist;
-        diffuse += max(dot(normal, dir), 0.0) / dist / dist * lightCol[i] ;
+        float fact = min(3., 1. / dist / dist);
+        diffuse += max(dot(normal, dir), 0.0) * fact * lightCol[i];
     }
 
     // specular lighting

@@ -109,8 +109,6 @@ impl MaterialProperties for PointLightSensitive {
                 _ => panic!("Should not happen"),
             }
 
-        } else {
-            panic!("Should not happen");
         }
     }
 
