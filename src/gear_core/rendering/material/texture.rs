@@ -91,7 +91,7 @@ impl TexturePresets {
         }
     }
 
-    pub fn ocean_final() -> Self {
+    pub fn cs_final() -> Self {
         Self {
             wrap_s: gl::CLAMP_TO_EDGE,
             wrap_t: gl::CLAMP_TO_EDGE,
@@ -102,25 +102,25 @@ impl TexturePresets {
         }
     }
 
-    pub fn ocean_default() -> Self {
+    pub fn cs_default() -> Self {
         Self {
-            wrap_s: gl::REPEAT,
-            wrap_t: gl::REPEAT,
-            min_filter: gl::LINEAR_MIPMAP_LINEAR,
-            mag_filter: gl::LINEAR,
-            internal_format: gl::RG32F,
-            format: gl::RGBA32F
+            wrap_s: gl::CLAMP_TO_EDGE,
+            wrap_t: gl::CLAMP_TO_EDGE,
+            min_filter: gl::NEAREST,
+            mag_filter: gl::NEAREST,
+            internal_format: gl::RGBA32F,
+            format: gl::RGBA,
         }
     }
 
-    pub fn ocean_init() -> Self {
+    pub fn ocean_default() -> Self {
         Self {
             wrap_s: gl::REPEAT,
             wrap_t: gl::REPEAT,
             min_filter: gl::NEAREST,
             mag_filter: gl::NEAREST,
-            internal_format: gl::RG32F,
-            format: gl::RG,
+            internal_format: gl::RGB32F,
+            format: gl::RGB,
         }
     }
 }
@@ -230,39 +230,6 @@ impl Texture2D {
         let texture = Self::new_from_presets(dimensions, TexturePresets::default(), Some(buffer));
 
         texture
-    }
-
-    pub fn CS_new_storage2D_text (
-        dimensions: (i32, i32),
-        presets: TexturePresets
-    ) -> Self {
-        let mut opengl_id = 0;
-        unsafe {
-            gl::GenTextures(1, &mut opengl_id);
-        }
-        let tex = Self { id: register_texture(opengl_id), dimensions, presets};
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, tex.get_opengl_id().expect("error: texture id broken"));
-            // set the texture wrapping/filtering options (on the currently bound texture object)
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, tex.presets.wrap_t as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, tex.presets.wrap_s as GLint);
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MIN_FILTER,
-                tex.presets.min_filter as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MAG_FILTER,
-                tex.presets.mag_filter as GLint,
-            );
-
-            gl::TexStorage2D(gl::TEXTURE_2D, 1, tex.presets.internal_format, dimensions.0, dimensions.1);
-
-            gl::BindTexture(gl::TEXTURE_2D, 0);
-
-        }
-        tex
     }
 
     pub fn get_dimensions(&self) -> (i32, i32) {

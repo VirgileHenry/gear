@@ -18,7 +18,9 @@ use crate::{COPY_FRAG_SHADER, gear_core::{
     },
 }, MeshRenderingBuffers, RENDER_FRAG_SHADER, ShaderPipeline};
 use crate::{COPY_VERT_SHADER, Mesh};
+use crate::gear_core::*;
 use crate::gear_core::camera::GlCamera;
+use crate::time_system::GlobalTime;
 
 pub trait Renderer {
     fn render(&self, components: &mut ComponentTable);
@@ -83,6 +85,7 @@ impl Renderer for DefaultOpenGlRenderer {
 
                 let mut out_tex = gl_camera.get_color_attachment().clone();
                 let fog_enabled = gl_camera.post_processing_effects.fog;
+                let rain_enabled = gl_camera.post_processing_effects.rain;
 
                 // Post processing step
                 let (post_processing_pipeline, io_node) = gl_camera.post_processing_pipeline();
@@ -100,6 +103,11 @@ impl Renderer for DefaultOpenGlRenderer {
                         post_processing_pipeline.set_vec3("fog", "mainLightColor", light.main_color_as_vec());
                         post_processing_pipeline.set_vec3("fog", "ambientColor", light.ambient_color_as_vec());
                     }
+                }
+
+
+                if rain_enabled {
+                    post_processing_pipeline.set_float("rain", "time", components.get_singleton::<GlobalTime>().expect("Missing global time").get_time());
                 }
 
                 if let Some((i_node, o_node)) = &io_node {

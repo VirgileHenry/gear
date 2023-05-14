@@ -1,5 +1,6 @@
 use cgmath::*;
-use refbox::{RefBox, Ref, BorrowError,};
+use refbox::{BorrowError, Ref, RefBox,};
+
 #[allow(dead_code)]
 pub struct Transform {
     position: Vector3<f32>,
@@ -36,6 +37,11 @@ impl Transform {
 
     pub fn scaled(mut self, s: f32) -> Transform {
         self.scale(s);
+        self
+    }
+
+    pub fn scaled_axis(mut self, s: Vector3<f32>) -> Transform {
+        self.scale_axis(s);
         self
     }
 
@@ -96,6 +102,11 @@ impl Transform {
 
     pub fn scale(&mut self, s: f32) {
         self.scale *= s;
+        self.recompute_world_pos();
+    }
+
+    pub fn scale_axis(&mut self, s: Vector3<f32>) {
+        self.scale.mul_element_wise(s);
         self.recompute_world_pos();
     }
 

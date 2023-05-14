@@ -63,13 +63,14 @@ impl ShaderProgram {
             let mut file = File::open(&vertex_path.shader_path).expect("Unable to open the file");
             let mut vertex_source = String::new();
             file.read_to_string(&mut vertex_source).expect("Unable to read the file");
+            vertex_source = vertex_source.replace("\r", "\n");
 
             let mut file = File::open(&fragment_path.shader_path).expect("Unable to open the file");
             let mut fragment_source = String::new();
             file.read_to_string(&mut fragment_source).expect("Unable to read the file");
+            fragment_source = fragment_source.replace("\r", "\n");
 
-            self.id = Self::compile_shader(&*fragment_source, &*vertex_source).expect("Could not recompile shader");
-
+            self.id = Self::compile_shader(&*fragment_source, &*vertex_source).expect(&*format!("Could not recompile shader:::{fragment_source}:::"));
         }
     }
 

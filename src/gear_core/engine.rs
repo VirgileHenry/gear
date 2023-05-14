@@ -4,9 +4,11 @@ use foundry::*;
 pub use glfw::CursorMode;
 
 use crate::gear_core::*;
+use crate::gear_core::engine::time_system::GlobalTime;
+
+pub mod time_system;
 
 const GL_SYSTEM: i32 = -100;
-
 
 pub struct Engine {
     world: World,
@@ -56,11 +58,15 @@ impl Engine {
         self.main_timer = Duration::ZERO;
         self.engine_state = EngineState::Running;
 
+        self.world.components.add_singleton(GlobalTime::new());
+
         let mut last_instant = Instant::now();
         while self.engine_state == EngineState::Running {
             // record last instant, keep track of time
             let delta = last_instant.elapsed();
             self.main_timer += delta;
+            self.world.components.get_singleton_mut::<GlobalTime>().expect("Missing global time").add_delta_time(delta.as_secs_f32());
+
             last_instant = Instant::now();
 
             // update the engine
