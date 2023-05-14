@@ -26,19 +26,19 @@ fn main() {
     /* Pipeline set up */
     let mut pipeline = ShaderPipeline::new();
 
-    pub static PERLIN_FRAG: &str = include_str!("test_pipeline/perlin.frag.glsl");
+    pub static PERLIN_FRAG: ShaderSource = ShaderSource::new("test_pipeline/perlin.frag.glsl");
     let perlin_shader = ShaderProgram::simple_program(PERLIN_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
     pipeline.add_render_node("perlin", (1000, 1000), perlin_shader);
     pipeline.set_float("perlin", "time", 1.0);
 
-    pub static ISLAND_MASK_FRAG: &str = include_str!("test_pipeline/island_mask.frag.glsl");
+    pub static ISLAND_MASK_FRAG: ShaderSource = ShaderSource::new("test_pipeline/island_mask.frag.glsl");
     let island_mask_shader = ShaderProgram::simple_program(ISLAND_MASK_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
     pipeline.add_render_node("island_mask", (1000, 1000), island_mask_shader);
     pipeline.set_float("island_mask", "global_falloff", 0.8);
     pipeline.set_float("island_mask", "falloff_speed", 16.0);
     pipeline.set_vec3("island_mask", "islands", Vector3::<f32>::new(0.5, 0.5, 0.2));
 
-    pub static MULTIPLIER_FRAG: &str = include_str!("test_pipeline/multiplier.frag.glsl");
+    pub static MULTIPLIER_FRAG: ShaderSource = ShaderSource::new("test_pipeline/multiplier.frag.glsl");
     let multiplier_shader = ShaderProgram::simple_program(MULTIPLIER_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
     pipeline.add_render_node("multiplier", (1000, 1000), multiplier_shader);
     pipeline.link_render_to_node("perlin", "height_map", "multiplier");
@@ -47,7 +47,7 @@ fn main() {
     pipeline.set_float("multiplier", "b", 0.505);
     pipeline.set_int("multiplier", "shape", 8);
 
-    pub static NORMAL_FRAG: &str = include_str!("test_pipeline/computeNormal.frag.glsl");
+    pub static NORMAL_FRAG: ShaderSource = ShaderSource::new("test_pipeline/computeNormal.frag.glsl");
     let normal_shader = ShaderProgram::simple_program(NORMAL_FRAG, PIPELINE_DEFAULT_VERT).unwrap();
     pipeline.add_render_node("normal", (1000, 1000), normal_shader);
     pipeline.link_render_to_node("multiplier", "heightMap", "normal");

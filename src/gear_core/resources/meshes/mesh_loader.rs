@@ -1,4 +1,4 @@
-use std::{io::{BufReader, Read}, fs::File};
+use std::{fs::File, io::{BufReader, Read}};
 
 use crate::{gear_core::rendering::geometry::mesh::Mesh, Vertex};
 
@@ -56,6 +56,7 @@ pub fn load_static_mesh(path: &str) -> Result<Mesh, MeshLoadingError> {
             Err(_) => return Err(MeshLoadingError::NotEnoughData),
         }
     }
+
 
     Ok(Mesh::new(vertices, triangles))
 }

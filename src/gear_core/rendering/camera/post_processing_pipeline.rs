@@ -15,6 +15,15 @@ pub fn resize_post_processing_pipeline(post_processing_effects: &PostProcessingE
             .resize(new_dimension);
     }
 
+    if post_processing_effects.rain {
+        pipeline.get_node_mut("rain")
+            .get_compute_shader_mut()
+            .set_dispatch_dimensions(((new_dimension.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (new_dimension.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
+        pipeline.get_node_mut("rain")
+            .get_texture(&Some(String::from("rain_out")))
+            .resize(new_dimension);
+    }
+
     let mut downsample_dim = (new_dimension.0/2, new_dimension.1/2);
 
     if post_processing_effects.bloom {
@@ -73,24 +82,60 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
     if post_processing_effects.fog {
         let fog_compute_source: &str = include_str!("post_process_shaders/fog.comp.glsl");
         let fog_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
-        let mut fog_compute_shader = ComputeShader::new(fog_compute_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut fog_compute_shader = ComputeShader::new(fog_compute_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
         fog_compute_shader.add_write_texture("result", fog_output_tex);
         fog_compute_shader.add_read_texture("color_out", processed_image.clone());
         pipeline.add_compute_node("fog", fog_compute_shader);
         pipeline.set_input_texture("input_tex", depth_tex.clone(), "fog");
         pipeline.set_float("fog", "a", 0.0003);
-        pipeline.set_float("fog", "b", 0.003);
+        pipeline.set_float("fog", "b", 0.001);
         io_nodes = Some((String::from("fog"), String::from("fog")));
+    }
+
+    if post_processing_effects.rain {
+        let rain_compute_source: &str = include_str!("post_process_shaders/rain.comp.glsl");
+        let rain_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
+        let mut rain_compute_shader = ComputeShader::new(rain_compute_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
+        rain_compute_shader.add_write_texture("rain_out", rain_output_tex);
+        pipeline.add_compute_node("rain", rain_compute_shader);
+        pipeline.set_float("rain", "alpha", 0.0);
+        pipeline.set_float("rain", "horizontal_speed", 0.0);
+        pipeline.set_float("rain", "look_dir_y", 0.0);
+        pipeline.set_float("rain", "droplet_speed", 3.0);
+        pipeline.set_float("rain", "droplet_length", 1.0);
+        pipeline.set_float("rain", "droplet_length", 1.0);
+        pipeline.set_float("rain", "droplet_density", 100.0);
+        io_nodes = match io_nodes  {
+            None => Some((String::from("rain"), String::from("rain"))),
+            Some((i_node, _)) => Some((i_node, String::from("rain"))),
+        };
+        if post_processing_effects.fog {
+                pipeline.link_compute_to_node(
+                "fog",
+                "result",
+                "rain_in",
+                "rain",
+            );
+        } else {
+            pipeline.set_input_texture("rain_in", processed_image.clone(), "rain");
+        }
     }
 
     if post_processing_effects.bloom {
         let threshold_compute_source: &str = include_str!("post_process_shaders/threshold.comp.glsl");
         let threshold_output_tex = Texture2D::new_from_presets((tex_dim.0 / 2, tex_dim.1 / 2), TexturePresets::pipeline_default(), None);
-        let mut threshold_compute_shader = ComputeShader::new(threshold_compute_source, (tex_dim.0 / 2 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / 2 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut threshold_compute_shader = ComputeShader::new(threshold_compute_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / 2 / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / 2 / DISPATCH_GROUP_SIZE.1, 1));
         threshold_compute_shader.add_write_texture("processed_image", threshold_output_tex);
         pipeline.add_compute_node("threshold", threshold_compute_shader);
 
-        if post_processing_effects.fog {
+        if post_processing_effects.rain {
+            pipeline.link_compute_to_node(
+                "rain",
+                "rain_out",
+                "image_to_process",
+                "threshold",
+            );
+        } else if post_processing_effects.fog {
             pipeline.link_compute_to_node(
                 "fog",
                 "result",
@@ -107,7 +152,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
         let downsampler_and_blur_x_source = include_str!("post_process_shaders/downsampler_and_blur_x.comp.glsl");
         let blur_y_source = include_str!("post_process_shaders/blur_y.comp.glsl");
         let mut downsampler_and_blur_x_compute = ComputeShader::new(downsampler_and_blur_x_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
-        let mut blur_y_compute = ComputeShader::new(blur_y_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut blur_y_compute = ComputeShader::new(blur_y_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
 
         let mut downsample_dim = (tex_dim.0 / 4, tex_dim.1 / 4);
         let mut previous_node = String::from("threshold");
@@ -116,7 +161,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
         for mip in 2..(2 + DOWN_SAMPLING_STEPS) {
             // downsampling + horizontal blur
             let mut node_downsampler_and_blur_x_compute = downsampler_and_blur_x_compute.clone();
-            node_downsampler_and_blur_x_compute.set_dispatch_dimensions((downsample_dim.0 / DISPATCH_GROUP_SIZE.0, downsample_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+            node_downsampler_and_blur_x_compute.set_dispatch_dimensions(((downsample_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (downsample_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
             let downsampled_tex = Texture2D::new_from_presets(downsample_dim, TexturePresets::pipeline_default(), None);
             let downsampled_tex_name = String::from("downsampled_tex");
             node_downsampler_and_blur_x_compute.add_write_texture(&downsampled_tex_name, downsampled_tex);
@@ -136,7 +181,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
 
             // vertical blur
             let mut node_blur_y = blur_y_compute.clone();
-            node_blur_y.set_dispatch_dimensions((downsample_dim.0 / DISPATCH_GROUP_SIZE.0, downsample_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+            node_blur_y.set_dispatch_dimensions(((downsample_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (downsample_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
             let fully_blurred_tex = Texture2D::new_from_presets(downsample_dim, TexturePresets::pipeline_default(), None);
             let fully_blurred_tex_name = String::from("blurred_tex");
             node_blur_y.add_read_write_texture(&fully_blurred_tex_name, fully_blurred_tex);
@@ -167,12 +212,19 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
     if post_processing_effects.bloom {
         let additive_source: &str = include_str!("post_process_shaders/additive_blender.comp.glsl");
         let additive_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
-        let mut additive_compute_shader = ComputeShader::new(additive_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut additive_compute_shader = ComputeShader::new(additive_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
 
         additive_compute_shader.add_write_texture("result", additive_output_tex);
         pipeline.add_compute_node("additive_blender", additive_compute_shader);
 
-        if post_processing_effects.fog {
+        if post_processing_effects.rain {
+            pipeline.link_compute_to_node(
+                "rain",
+                "rain_out",
+                "tex_before_threshold",
+                "additive_blender",
+            );
+        } else if post_processing_effects.fog {
             pipeline.link_compute_to_node(
                 "fog",
                 "result",
@@ -198,7 +250,7 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
     if post_processing_effects.gamma {
         let gamma_correction_source: &str = include_str!("post_process_shaders/gamma_correction.comp.glsl");
         let gamma_output_tex = Texture2D::new_from_presets((tex_dim.0, tex_dim.1), TexturePresets::pipeline_default(), None);
-        let mut gamma_correction_compute = ComputeShader::new(gamma_correction_source, (tex_dim.0 / DISPATCH_GROUP_SIZE.0, tex_dim.1 / DISPATCH_GROUP_SIZE.1, 1));
+        let mut gamma_correction_compute = ComputeShader::new(gamma_correction_source, ((tex_dim.0 + DISPATCH_GROUP_SIZE.0 - 1) / DISPATCH_GROUP_SIZE.0, (tex_dim.1 + DISPATCH_GROUP_SIZE.1 - 1) / DISPATCH_GROUP_SIZE.1, 1));
         gamma_correction_compute.add_write_texture("result", gamma_output_tex);
         pipeline.add_compute_node("gamma_correction", gamma_correction_compute);
 
@@ -206,6 +258,13 @@ pub fn create_post_processing_pipeline(post_processing_effects: &PostProcessingE
             pipeline.link_compute_to_node(
                 "additive_blender",
                 "result",
+                "input_tex",
+                "gamma_correction",
+            );
+        } else if post_processing_effects.rain {
+            pipeline.link_compute_to_node(
+                "rain",
+                "rain_out",
                 "input_tex",
                 "gamma_correction",
             );

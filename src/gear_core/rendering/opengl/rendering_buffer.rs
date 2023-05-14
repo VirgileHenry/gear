@@ -1,4 +1,31 @@
-use crate::{buffers::{VertexArray, BufferObject}, Mesh, Vertex, ui_vertex::UIVertex};
+use cgmath::{Vector3, Vector4};
+
+use crate::{buffers::{BufferObject, VertexArray}, Mesh, ui_vertex::UIVertex, Vertex};
+
+pub struct BoundingBox {
+    pub points: [Vector3<f32>; 8]
+}
+
+impl BoundingBox {
+    pub fn new(radius: Vector3<f32>) -> Self {
+        let mut points = [radius; 8];
+        let mut sign = vec![1., 1., 1.];
+        for i in 0..8 {
+            for j in 0..3 {
+                points[i][j] *= sign[j];
+            }
+            for j in 0..2 {
+                if sign[2 - j] == -1. {
+                    sign[3 - j] *= -1.;
+                }
+            }
+            sign[0] *= -1.;
+        }
+        BoundingBox {points}
+    }
+
+}
+
 
 #[allow(unused)] // technically we are not using vbo and ebo, but keep them alive do avoid dropping them
 pub struct MeshRenderingBuffers {
@@ -6,11 +33,18 @@ pub struct MeshRenderingBuffers {
     vbo: BufferObject, // holds vertex data
     ebo: BufferObject, // holds index data
     tri_count: usize, // number of triangles in mesh
+    pub bounding_box: Option<BoundingBox>,
 }
 
 impl MeshRenderingBuffers {
-    pub fn new(vao: VertexArray, vbo: BufferObject, ebo: BufferObject, tri_count: usize) -> MeshRenderingBuffers {
-        MeshRenderingBuffers { vao, vbo, ebo, tri_count }
+    pub fn new(vao: VertexArray, vbo: BufferObject, ebo: BufferObject, tri_count: usize, bounding_box_radius: Option<Vector3<f32>>) -> MeshRenderingBuffers {
+        MeshRenderingBuffers {
+            vao,
+            vbo,
+            ebo,
+            tri_count,
+            bounding_box: if let Some(radius) = bounding_box_radius { Some(BoundingBox::new(radius)) } else { None }
+        }
     }
 
     pub fn from(mesh: &Mesh) -> MeshRenderingBuffers {
@@ -32,7 +66,7 @@ impl MeshRenderingBuffers {
         ebo.unbind();
         vbo.unbind();
 
-        MeshRenderingBuffers::new(vao, vbo, ebo, mesh.triangles.len())
+        MeshRenderingBuffers::new(vao, vbo, ebo, mesh.triangles.len(), None)
     }
 
     pub fn bind(&self) {
@@ -79,6 +113,6 @@ impl MeshRenderingBuffers {
         ebo.unbind();
         vbo.unbind();
 
-        MeshRenderingBuffers::new(vao, vbo, ebo, triangles.len())
+        MeshRenderingBuffers::new(vao, vbo, ebo, triangles.len(), None)
     }
 }

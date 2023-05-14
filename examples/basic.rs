@@ -9,9 +9,9 @@ fn main() {
 
     // create a renderer and give shaders to it
     let mut renderer = DefaultOpenGlRenderer::new(window_size);
-    let program = ShaderProgram::simple_program(
-        MONOCHROME_LIT_FRAG_SHADER,
-        DEFAULT_VERT_SHADER
+    let program = ShaderProgram::simple_recompilable_program(
+        &MONOCHROME_LIT_FRAG_SHADER,
+        &DEFAULT_VERT_SHADER
     ).expect("Unable to compile shaders !");
     // register the shader program in the renderer
     renderer.register_shader_program("defaultShader", program);

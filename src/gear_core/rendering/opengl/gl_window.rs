@@ -136,6 +136,10 @@ impl GlGameWindow {
                     // todo : let's not do that in release...
                     *engine_message = EngineMessage::StopEngine;
                 }
+                if code == glfw::Key::F8 {
+                    *engine_message = EngineMessage::RecompileSource;
+
+                }
             }
 
             _ => {}
@@ -183,6 +187,10 @@ impl GlGameWindow {
             },
             GlWindowMessage::ResizeWindow(dimensions) => self.gl_renderer.set_dimensions(*dimensions), 
         }
+    }
+
+    pub fn get_renderer_mut(&mut self) -> &mut Box<dyn Renderer> {
+        &mut self.gl_renderer
     }
 
 }

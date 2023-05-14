@@ -28,6 +28,7 @@ pub struct PostProcessingEffects {
     pub bloom: bool,
     pub fog: bool,
     pub gamma: bool,
+    pub rain: bool,
 }
 
 pub struct CameraComponent {
@@ -42,11 +43,14 @@ pub struct CameraComponent {
 pub struct GlCamera {
     perspective_matrix: cgmath::Matrix4<f32>,
     viewport_dimensions: (i32, i32),
+
     color_attachment: Texture2D,
     depth_attachment: Texture2D,
     framebuffer_id: GLuint,
+
     show_wireframe: bool, // todo : better way to handle camera render options
 
+    // Post processing pipeline && the first (unicity ???) and the last shader of the pipeline names
     post_processing_pipeline: (ShaderPipeline, Option<(String, String)>),
     pub post_processing_effects: PostProcessingEffects,
 }
@@ -145,6 +149,7 @@ impl CameraComponent {
             bloom: true,
             gamma: true,
             fog: true,
+            rain: true,
         };
         // assign 
         self.gl_camera = Some(GlCamera {

@@ -1,3 +1,5 @@
+use cgmath::Vector3;
+
 use crate::{Mesh, Vertex};
 
 impl Mesh {
@@ -50,6 +52,7 @@ impl Mesh {
         Mesh {
             vertices,
             triangles,
+            bounding_box: Some([Vector3::new(-radius, -radius, -radius), Vector3::new(radius, radius, radius)])
         }
     }
 }
