@@ -149,7 +149,7 @@ impl CameraComponent {
             bloom: true,
             gamma: true,
             fog: true,
-            rain: true,
+            rain: false,
         };
         // assign 
         self.gl_camera = Some(GlCamera {
