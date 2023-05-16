@@ -157,7 +157,7 @@ float density(vec3 p) {
     float freq = 1.;
     float amp = 1.;
     float v = 0.;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 7; ++i) {
         v+=(perlin(p*freq)+.1)*amp;
         amp*=.5;
         freq*=2.;
@@ -231,43 +231,33 @@ void main(void)
         final_fog = mix(final_fog, blue, 1.-exp(- .02 * underwater_dst));
     } else {
         final_fog = applyFog3(final_fog, linearDepth, camPos, front.xyz, -mainLightDir);
-    }
+        float d_min, d_max;
+        float attenuation = 0.03;
+        float cloud_height = 700.;
+        float cloud_scale = 2000.;
 
-    float d_min, d_max;
-    float attenuation = 0.03;
-    float cloud_height = 700.;
-    float cloud_scale = 2000.;
+        vec3 lightning_col = vec3(2., 2., 0.4);
+        float ligthning_time = fract(time);
+        vec3 ligthning_pos = (ihash(ivec3(floor(time)))-.5)*vec3(400, 100, 400);
 
-    vec3 lightning_col = vec3(2., 2., 0.4);
-    float ligthning_time = fract(time);
-    vec3 ligthning_pos = (ihash(ivec3(floor(time)))-.5)*vec3(400, 100, 400);
-
-    if (box_intersect(vec3(camPos.x, cloud_height, camPos.z), vec3(20000., 500., 20000.), camPos, front, d_min, d_max)) {
-        d_min = max(0., d_min);
-        d_max = min(linearDepth, d_max);
-        float distance = 0.;
-        vec3 cloud_col = mainLightColor;
-        float t = d_min;
-        float dt = min(30., (d_max-d_min)/40.);
-        for (int i = 0; i < 40; ++i) {
-            t += dt;
-            if (t > d_max) { break; }
-            vec3 point = camPos + t * front;
-            float step_distance = 0.;
-            //cloud_col += lightning_col*smoothstep(100., 0., length(point-ligthning_pos));
-            distance += dt*max(0., density(point/200.)*(perlin(point/cloud_scale))*(1.-exp(-(point.y-cloud_height)*0.001)));
+        if (box_intersect(vec3(camPos.x, cloud_height, camPos.z), vec3(20000., 500., 20000.), camPos, front, d_min, d_max)) {
+            d_min = max(0., d_min);
+            d_max = min(linearDepth, d_max);
+            float distance = 0.;
+            vec3 cloud_col = max(mainLightColor, vec3(.3));
+            float t = d_min;
+            float dt = min(30., (d_max-d_min)/20.);
+            for (int i = 0; i < 20; ++i) {
+                t += dt;
+                if (t > d_max) { break; }
+                vec3 point = camPos + t * front;
+                float step_distance = 0.;
+                //cloud_col += lightning_col*smoothstep(100., 0., length(point-ligthning_pos));
+                distance += dt*max(0., density(point/300.)*(perlin(point/cloud_scale))*(1.-exp(-(point.y-cloud_height)*0.001)));
+            }
+            final_fog = mix(cloud_col, final_fog, exp(-distance*attenuation));
         }
-
-        //float step_size = (d_max - d_min)/100;
-        //for (int i = 0; i < 100; ++i) {
-        //    t += step_size;
-        //    vec3 point = camPos + t * front;
-        //    //cloud_col *= exp(-dt*attenuation);
-        //    distance += dt*max(0., density(point/200.)*(perlin(point/1000.)))*(1.-exp(-point.y*0.01));
-        //}
-        final_fog = mix(cloud_col, final_fog, exp(-distance*attenuation));
     }
-
 
 
 
