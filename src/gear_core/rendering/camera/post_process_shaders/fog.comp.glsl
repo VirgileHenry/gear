@@ -246,14 +246,16 @@ void main(void)
             float distance = 0.;
             vec3 cloud_col = max(mainLightColor, vec3(.3));
             float t = d_min;
-            float dt = min(30., (d_max-d_min)/20.);
-            for (int i = 0; i < 20; ++i) {
-                t += dt;
+            float dt = min(30., (d_max-d_min)/40.);
+            vec3 point = vec3(camPos+d_min*front);
+            for (int i = 0; i < 40; ++i) {
                 if (t > d_max) { break; }
-                vec3 point = camPos + t * front;
+                float perlin_density = perlin(point/cloud_scale);
+                t += dt+cloud_scale*(perlin_density*.5+.5)*.02;
+                point = camPos + t * front;
                 float step_distance = 0.;
                 //cloud_col += lightning_col*smoothstep(100., 0., length(point-ligthning_pos));
-                distance += dt*max(0., density(point/300.)*(perlin(point/cloud_scale))*(1.-exp(-(point.y-cloud_height)*0.001)));
+                distance += dt*max(0., density(point/300.)*perlin_density*(1.-exp(-(point.y-cloud_height)*0.001)));
             }
             final_fog = mix(cloud_col, final_fog, exp(-distance*attenuation));
         }
