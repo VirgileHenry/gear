@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::rc::Rc;
 
-use cgmath::Vector3;
+use cgmath::{Vector3, Vector4};
 use foundry::{ComponentTable, iterate_over_component, iterate_over_component_mut, System, Updatable, UpdateFrequency};
 use refbox::RefBox;
 
@@ -11,7 +11,7 @@ use crate::gear_core::Transform;
 
 /// Used as the main scene light
 pub struct LightRegister {
-    positions: RefBox<Vec<Vector3<f32>>>,
+    positions: RefBox<Vec<Vector4<f32>>>,
     colors: RefBox<Vec<Vector3<f32>>>,
 }
 
@@ -36,7 +36,8 @@ impl Updatable for LightRegister {
                 colors.clear();
                 let mut count = 0;
                 for (point_light_tf, point_light) in iterate_over_component!(components; Transform, PointLight) {
-                    positions.push(point_light_tf.position().clone());
+                    let pos = point_light_tf.position();
+                    positions.push(Vector4::new(pos.x, pos.y, pos.z, point_light.get_distance()));
                     colors.push(point_light.color_as_vec().clone());
                     count += 1;
                 }

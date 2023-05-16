@@ -67,6 +67,8 @@ impl DefaultOpenGlRenderer {
 impl Renderer for DefaultOpenGlRenderer {
     fn render(&self, components: &mut ComponentTable) {
 
+        let time = components.get_singleton::<GlobalTime>().unwrap().get_time();
+
         self.render_scene(components);
         for (camera, cam_transform) in iterate_over_component_mut!(&components; CameraComponent, Transform) {
             if camera.is_main() {
@@ -91,6 +93,8 @@ impl Renderer for DefaultOpenGlRenderer {
                 let (post_processing_pipeline, io_node) = gl_camera.post_processing_pipeline();
 
                 if fog_enabled {
+                    post_processing_pipeline.set_float("fog", "time", time);
+
                     post_processing_pipeline.set_float("fog", "aspect", aspect);
                     post_processing_pipeline.set_float("fog", "half_fov", fov / 2.);
                     post_processing_pipeline.set_float("fog", "z_near", z_near);

@@ -10,6 +10,7 @@ uniform sampler2D input_tex;
 
 uniform float a;
 uniform float b;
+uniform float time;
 
 uniform mat4 projectionMat;
 uniform mat4 viewMat;
@@ -32,6 +33,17 @@ vec3 hash(vec3 v) {
     fract(sin(dot(v, vec3(1387., 249., 1376.21))+1246.)*1896.)
     );
 }
+
+
+vec3 ihash(ivec3 v) {
+    return vec3
+    (
+    fract(sin(float(dot(v, ivec3(763, 647, 294))+256))*283.),
+    fract(sin(float(dot(v, ivec3(135, 836, 652))+145))*422.),
+    fract(sin(float(dot(v, ivec3(387, 249, 176))+1246))*196.)
+    );
+}
+
 
 float perlin(vec3 coords) {
     vec3 cube_coords = floor(coords);
@@ -139,6 +151,20 @@ float HenyeyGreenstein(float g, float costh) {
 float phase_func(float g, float costh) {
     return mix(HenyeyGreenstein(-g, costh), HenyeyGreenstein(g, costh), 0.7);
 }
+
+
+float density(vec3 p) {
+    float freq = 1.;
+    float amp = 1.;
+    float v = 0.;
+    for (int i = 0; i < 5; ++i) {
+        v+=(perlin(p*freq)+.1)*amp;
+        amp*=.5;
+        freq*=2.;
+    }
+    return max(0.,v);
+}
+
 #define EXT_MULT 1.
 float scattering(float density, float mu) {
     float attenuation = 0.2;
@@ -175,7 +201,7 @@ void main(void)
 
     float near = 0.3;
     float far = 20000.;
-    vec2 uv = vec2(gl_GlobalInvocationID.xy)/tex_size;
+    vec2 uv = vec2(gl_GlobalInvocationID.xy+ivec2(1))/tex_size;
 
     float h = tan(half_fov*PI/180.)*z_near;
     float x = h * aspect;
@@ -188,32 +214,6 @@ void main(void)
     float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
     vec3 color = imageLoad(color_out, ivec2(gl_GlobalInvocationID.xy)).xyz;
 
-    float d_min, d_max;
-    float attenuation = 0.003;
-    if (box_intersect(vec3(0., 300., 0.), vec3(200., 300., 200.), camPos, front, d_min, d_max)) {
-        d_min = max(0., d_min);
-        d_max = min(linearDepth, d_max);
-        float distance = 0.;
-        vec3 cloud_col = vec3(mainLightColor);
-        float t = d_min;
-        float dt = 3.5;
-        for (int i = 0; i < 190; ++i) {
-            t += dt;
-            if (t > d_max) { break; }
-            vec3 point = camPos + t * front;
-            float step_distance = 0.;
-            // for (float j = 5.; j > 0.5; --j) {
-            //     float step_d_min, step_d_max;
-            //     box_intersect(vec3(0., 300., 0.), vec3(200., 300., 200.), point, -mainLightDir, step_d_min, step_d_max);
-            //     step_distance += step_d_max/6.*(perlin(point/40.)+.5);
-            // }
-            //cloud_col += mainLightColor * exp(-step_distance*attenuation);
-            cloud_col *= exp(-dt*attenuation);
-            distance += dt*(perlin(point/40.)+.5);
-        }
-        color = mix(cloud_col, color, exp(-distance*attenuation));
-
-    }
 
     float to_water_fact = clamp(-camPos.y/front.y/linearDepth, 0., 1.);
 
@@ -230,8 +230,46 @@ void main(void)
         vec3 blue = mix(light_blue, deep_blue, smoothstep(0., -300., camPos.y + front.y * 10.));
         final_fog = mix(final_fog, blue, 1.-exp(- .02 * underwater_dst));
     } else {
-        //final_fog = applyFog3(final_fog, linearDepth, camPos, front.xyz, -mainLightDir);
+        final_fog = applyFog3(final_fog, linearDepth, camPos, front.xyz, -mainLightDir);
     }
+
+    float d_min, d_max;
+    float attenuation = 0.03;
+    float cloud_height = 700.;
+    float cloud_scale = 2000.;
+
+    vec3 lightning_col = vec3(2., 2., 0.4);
+    float ligthning_time = fract(time);
+    vec3 ligthning_pos = (ihash(ivec3(floor(time)))-.5)*vec3(400, 100, 400);
+
+    if (box_intersect(vec3(camPos.x, cloud_height, camPos.z), vec3(20000., 500., 20000.), camPos, front, d_min, d_max)) {
+        d_min = max(0., d_min);
+        d_max = min(linearDepth, d_max);
+        float distance = 0.;
+        vec3 cloud_col = mainLightColor;
+        float t = d_min;
+        float dt = min(30., (d_max-d_min)/40.);
+        for (int i = 0; i < 40; ++i) {
+            t += dt;
+            if (t > d_max) { break; }
+            vec3 point = camPos + t * front;
+            float step_distance = 0.;
+            //cloud_col += lightning_col*smoothstep(100., 0., length(point-ligthning_pos));
+            distance += dt*max(0., density(point/200.)*(perlin(point/cloud_scale))*(1.-exp(-(point.y-cloud_height)*0.001)));
+        }
+
+        //float step_size = (d_max - d_min)/100;
+        //for (int i = 0; i < 100; ++i) {
+        //    t += step_size;
+        //    vec3 point = camPos + t * front;
+        //    //cloud_col *= exp(-dt*attenuation);
+        //    distance += dt*max(0., density(point/200.)*(perlin(point/1000.)))*(1.-exp(-point.y*0.01));
+        //}
+        final_fog = mix(cloud_col, final_fog, exp(-distance*attenuation));
+    }
+
+
+
 
     imageStore(result, ivec2(gl_GlobalInvocationID.xy), vec4(final_fog, 0.));
 }

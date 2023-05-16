@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use cgmath::Vector3;
+use cgmath::{Vector3, Vector4};
 use foundry::iterate_over_component;
 use refbox::{Ref, RefBox};
 
@@ -45,23 +45,27 @@ impl MainLight {
 /// Used as the main scene light
 pub struct PointLight {
     color: Color,
-    intensity: f32,
+    distance: f32,
 }
 
 impl PointLight {
-    pub fn new(color: Color, intensity: f32) -> PointLight {
+    pub fn new(color: Color, distance: f32) -> PointLight {
         PointLight {
             color,
-            intensity,
+            distance,
         }
     }
 
     pub fn color_as_vec(&self) -> cgmath::Vector3<f32> {
-        self.color.as_vector() * self.intensity
+        self.color.as_vector()
     }
 
-    pub fn set_intensity(&mut self, intensity: f32) {
-        self.intensity = intensity;
+    pub fn set_distance(&mut self, distance: f32) {
+        self.distance = distance;
+    }
+
+    pub fn get_distance(&self) -> f32 {
+        self.distance
     }
 
     pub fn set_color(&mut self, color: Color) {
@@ -72,7 +76,7 @@ impl PointLight {
 
 pub struct PointLightSensitive {
     color: Option<Ref<Vec<Vector3<f32>>>>,
-    pos: Option<Ref<Vec<Vector3<f32>>>>,
+    pos: Option<Ref<Vec<Vector4<f32>>>>,
 }
 
 impl PointLightSensitive {
@@ -83,7 +87,7 @@ impl PointLightSensitive {
         }
     }
 
-    pub fn set_color_and_pos(&mut self, color: &Ref<Vec<Vector3<f32>>>, pos: &Ref<Vec<Vector3<f32>>>) {
+    pub fn set_color_and_pos(&mut self, color: &Ref<Vec<Vector3<f32>>>, pos: &Ref<Vec<Vector4<f32>>>) {
         self.color = Some(color.clone());
         self.pos = Some(pos.clone());
     }
@@ -97,7 +101,7 @@ impl MaterialProperties for PointLightSensitive {
                 (Ok(color), Ok(pos))=> {
                     for (point_pos, point_col) in pos.iter().zip(color.iter()) {
                         unsafe {
-                            shader.set_vec3(&*format!("lightPos[{}]", i), *point_pos);
+                            shader.set_vec4(&*format!("lightPos[{}]", i), *point_pos);
                             shader.set_vec3(&*format!("lightCol[{}]", i), *point_col);
                         }
                         i+=1;

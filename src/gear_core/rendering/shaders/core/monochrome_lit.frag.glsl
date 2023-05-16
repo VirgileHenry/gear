@@ -12,7 +12,7 @@ uniform vec3 camPos;
 
 uniform int lightCount;
 uniform vec3 lightCol[MAX_POINT_LIGHT_COUNT];
-uniform vec3 lightPos[MAX_POINT_LIGHT_COUNT];
+uniform vec4 lightPos[MAX_POINT_LIGHT_COUNT];
 
 
 in VS_OUTPUT {
@@ -32,10 +32,10 @@ void main()
     vec3 normal = normalize(IN.Normal);
     vec3 diffuse = max(dot(normal, mainLightDir), 0.0) * mainLightColor;
     for (int i = 0; i < lightCount; ++i) {
-        vec3 dir = lightPos[i]-IN.Position;
-        float dist = length(dir);
-        dir/=dist;
-        float fact = min(3., 1. / dist / dist);
+        vec3 dir = lightPos[i].xyz-IN.Position;
+        float dist = length(dir)/lightPos[i].w;
+        dir = normalize(dir);
+        float fact = min(1., 1. / dist);
         diffuse += max(dot(normal, dir), 0.0) * fact * lightCol[i];
     }
 
