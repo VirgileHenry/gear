@@ -1,5 +1,5 @@
 #version 330 core
-#define MAX_POINT_LIGHT_COUNT 10
+#define MAX_POINT_LIGHT_COUNT 50
 
 // object color
 uniform vec3 color;
