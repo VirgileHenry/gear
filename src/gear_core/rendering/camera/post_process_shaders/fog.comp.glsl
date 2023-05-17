@@ -229,7 +229,8 @@ void main(void)
         vec3 deep_blue = vec3(0.003, 0.009, 0.03);
         vec3 blue = mix(light_blue, deep_blue, smoothstep(0., -300., camPos.y + front.y * 10.));
         final_fog = mix(final_fog, blue, 1.-exp(- .02 * underwater_dst));
-    } else {
+    }
+    if (camPos.y > -20.) {
         final_fog = applyFog3(final_fog, linearDepth, camPos, front.xyz, -mainLightDir);
         float d_min, d_max;
         float attenuation = 0.03;
